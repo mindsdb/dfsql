@@ -1,0 +1,710 @@
+
+
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+      
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.pipeline.stopwords" content="True">
+      
+        <meta name="lang:search.pipeline.trimmer" content="True">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-4.1.2">
+    
+    
+      
+        <title>Predictor - Lightwood</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/application.3020aac5.css">
+      
+        <link rel="stylesheet" href="../assets/stylesheets/application-palette.224b79ff.css">
+      
+      
+        
+        
+        <meta name="theme-color" content="#ef5350">
+      
+    
+    
+      <script src="../assets/javascripts/modernizr.01ccdecf.js"></script>
+    
+    
+      
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+        <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
+      
+    
+    <link rel="stylesheet" href="../assets/fonts/material-icons.css">
+    
+    
+    
+      
+    
+    
+  </head>
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="red" data-md-color-accent="red">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+          <svg xmlns="http://www.w3.org/2000/svg" width="416" height="448"
+    viewBox="0 0 416 448" id="__github">
+  <path fill="currentColor" d="M160 304q0 10-3.125 20.5t-10.75 19-18.125
+        8.5-18.125-8.5-10.75-19-3.125-20.5 3.125-20.5 10.75-19 18.125-8.5
+        18.125 8.5 10.75 19 3.125 20.5zM320 304q0 10-3.125 20.5t-10.75
+        19-18.125 8.5-18.125-8.5-10.75-19-3.125-20.5 3.125-20.5 10.75-19
+        18.125-8.5 18.125 8.5 10.75 19 3.125 20.5zM360
+        304q0-30-17.25-51t-46.75-21q-10.25 0-48.75 5.25-17.75 2.75-39.25
+        2.75t-39.25-2.75q-38-5.25-48.75-5.25-29.5 0-46.75 21t-17.25 51q0 22 8
+        38.375t20.25 25.75 30.5 15 35 7.375 37.25 1.75h42q20.5 0
+        37.25-1.75t35-7.375 30.5-15 20.25-25.75 8-38.375zM416 260q0 51.75-15.25
+        82.75-9.5 19.25-26.375 33.25t-35.25 21.5-42.5 11.875-42.875 5.5-41.75
+        1.125q-19.5 0-35.5-0.75t-36.875-3.125-38.125-7.5-34.25-12.875-30.25-20.25-21.5-28.75q-15.5-30.75-15.5-82.75
+        0-59.25 34-99-6.75-20.5-6.75-42.5 0-29 12.75-54.5 27 0 47.5 9.875t47.25
+        30.875q36.75-8.75 77.25-8.75 37 0 70 8 26.25-20.5
+        46.75-30.25t47.25-9.75q12.75 25.5 12.75 54.5 0 21.75-6.75 42 34 40 34
+        99.5z" />
+</svg>
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+    
+      <a href="#predictor-api" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a href=".." title="Lightwood" class="md-header-nav__button md-logo">
+          
+            <img src="../assets/logo_icon.png" width="24" height="24">
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            <span class="md-header-nav__topic">
+              Lightwood
+            </span>
+            <span class="md-header-nav__topic">
+              Predictor
+            </span>
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          <label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+          
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="__search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+        
+      </div>
+      
+        <div class="md-flex__cell md-flex__cell--shrink">
+          <div class="md-header-nav__source">
+            
+
+
+  
+
+<a href="https://github.com/mindsdb/lightwood/" title="Go to repository" class="md-source" data-md-source="github">
+  
+    <div class="md-source__icon">
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <use xlink:href="#__github" width="24" height="24"></use>
+      </svg>
+    </div>
+  
+  <div class="md-source__repository">
+    mindsdb/lightwood
+  </div>
+</a>
+          </div>
+        </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      
+      <main class="md-main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="__drawer">
+    <a href=".." title="Lightwood" class="md-nav__button md-logo">
+      
+        <img src="../assets/logo_icon.png" width="48" height="48">
+      
+    </a>
+    Lightwood
+  </label>
+  
+    <div class="md-nav__source">
+      
+
+
+  
+
+<a href="https://github.com/mindsdb/lightwood/" title="Go to repository" class="md-source" data-md-source="github">
+  
+    <div class="md-source__icon">
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <use xlink:href="#__github" width="24" height="24"></use>
+      </svg>
+    </div>
+  
+  <div class="md-source__repository">
+    mindsdb/lightwood
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." title="Home" class="md-nav__link">
+      Home
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Predictor
+      </label>
+    
+    <a href="./" title="Predictor" class="md-nav__link md-nav__link--active">
+      Predictor
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#constructor-95_init__" title="Constructor, __init__()" class="md-nav__link">
+    Constructor, __init__()
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config" title="config" class="md-nav__link">
+    config
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features" title="features" class="md-nav__link">
+    features
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mixer" title="mixer" class="md-nav__link">
+    mixer
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#learn" title="learn()" class="md-nav__link">
+    learn()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#predict" title="predict()" class="md-nav__link">
+    predict()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#save" title="save()" class="md-nav__link">
+    save()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calculate_accuracy" title="calculate_accuracy()" class="md-nav__link">
+    calculate_accuracy()
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="https://github.com/mindsdb/lightwood/tree/master/docs/examples" title="Examples" class="md-nav__link">
+      Examples
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#constructor-95_init__" title="Constructor, __init__()" class="md-nav__link">
+    Constructor, __init__()
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config" title="config" class="md-nav__link">
+    config
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features" title="features" class="md-nav__link">
+    features
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mixer" title="mixer" class="md-nav__link">
+    mixer
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#learn" title="learn()" class="md-nav__link">
+    learn()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#predict" title="predict()" class="md-nav__link">
+    predict()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#save" title="save()" class="md-nav__link">
+    save()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calculate_accuracy" title="calculate_accuracy()" class="md-nav__link">
+    calculate_accuracy()
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/mindsdb/lightwood/edit/master/docs/API.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                
+                
+                <h1 id="predictor-api">Predictor API</h1>
+<div class="codehilite"><pre><span></span><span class="kn">from</span> <span class="nn">lightwood</span> <span class="kn">import</span> <span class="n">Predictor</span>
+</pre></div>
+
+
+<p>Lightwood has one main class; The <strong>Predictor</strong>, which is a modular construct that you can train and get predictions from. It is made out of 3 main building blocks (<em>features, encoders, mixers</em>) that you can configure, modify and expand as you wish.</p>
+<p><img alt="building_blocks" src="https://docs.google.com/drawings/d/e/2PACX-1vTrzcXyqDeaGWOwG-3BWOV5wj1U2M5v7ojracqv39z2Ljv-oFqxh4bxFiJxjjtd7CgehptMeBlLYx6w/pub?w=1399&amp;h=818&amp;a=1" /></p>
+<div class="admonition info">
+<p class="admonition-title">Building blocks</p>
+<ul>
+<li><strong>Features</strong>:<ul>
+<li><strong>input_features</strong>: These are the columns in your dataset that you want to take as input for your predictor.</li>
+<li><strong>output_features</strong>: These are the columns in your dataset that you want to learn how to predict.</li>
+</ul>
+</li>
+<li><strong>Encoders</strong>: These are tools to turn the data in your input or output features into vector/tensor representations and vice-versa.</li>
+<li><strong>Mixers</strong>: How you mix the output of encoded features and also other mixers</li>
+</ul>
+</div>
+<h2 id="constructor-95_init__">Constructor, __init__()</h2>
+<div class="codehilite"><pre><span></span><span class="n">my_predictor</span> <span class="o">=</span> <span class="n">Predictor</span><span class="p">(</span> <span class="n">output</span><span class="o">=</span><span class="p">[]</span> <span class="o">|</span> <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">}</span> <span class="o">|</span> <span class="n">load_from_path</span><span class="o">=&lt;</span><span class="n">file_path</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="admonition note">
+<p>Predictor, can take any of the following <strong>arguments</strong></p>
+<ul>
+<li><strong>load_from_path</strong>: If you have a saved predictor that you want to load, just give the path to the file</li>
+<li><strong>output</strong>: A list with the column names you want to predict. (<em>Note: If you pass this argument, lightwood will simply try to guess the best config possible</em>)</li>
+<li><strong>config</strong>: A dictionary, containing the configuration on how to glue all the building blocks. </li>
+</ul>
+</div>
+<h3 id="config"><strong>config</strong></h3>
+<p>The config argument allows you to pass a dictionary that defines and gives you absolute control over how to build your predictive model.
+A config example goes as follows:</p>
+<div class="codehilite"><pre><span></span><span class="kn">from</span> <span class="nn">lightwood</span> <span class="kn">import</span> <span class="n">COLUMN_DATA_TYPES</span><span class="p">,</span> <span class="n">BUILTIN_MIXERS</span><span class="p">,</span> <span class="n">BUILTIN_ENCODERS</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+
+        <span class="c1">## REQUIRED:</span>
+        <span class="s1">&#39;input_features&#39;</span><span class="p">:</span> <span class="p">[</span>
+
+            <span class="c1"># by default each feature has an encoder, so all you have to do is specify the data type</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;sensor1&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">COLUMN_DATA_TYPES</span><span class="o">.</span><span class="n">NUMERIC</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;sensor2&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">COLUMN_DATA_TYPES</span><span class="o">.</span><span class="n">NUMERIC</span>
+            <span class="p">},</span>
+
+            <span class="c1"># some encoders have attributes that can be specified on configuration</span>
+            <span class="c1"># in this particular lets assume we have a photo of the product, we would like to encode this image and optimize for speed</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;product_photo&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">COLUMN_DATA_TYPES</span><span class="o">.</span><span class="n">IMAGE</span><span class="p">,</span>
+                <span class="s1">&#39;encoder_class&#39;</span><span class="p">:</span> <span class="n">BUILTIN_ENCODERS</span><span class="o">.</span><span class="n">Image</span><span class="o">.</span><span class="n">Img2VecEncoder</span><span class="p">,</span> <span class="c1"># note that this is just a class, you can build your own if you wish</span>
+                <span class="s1">&#39;encoder_attrs&#39;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s1">&#39;aim&#39;</span><span class="p">:</span> <span class="s1">&#39;speed&#39;</span> 
+                    <span class="c1"># you can check the encoder attributes here: </span>
+                    <span class="c1">#  https://github.com/mindsdb/lightwood/blob/master/lightwood/encoders/image/img_2_vec.py</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+
+        <span class="s1">&#39;output_features&#39;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;action_to_take&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">COLUMN_DATA_TYPES</span><span class="o">.</span><span class="n">CATEGORICAL</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+
+        <span class="c1">## OPTIONAL</span>
+        <span class="s1">&#39;mixer&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">BUILTIN_MIXERS</span><span class="o">.</span><span class="n">NnMixer</span>
+        <span class="p">}</span>
+
+    <span class="p">}</span>
+</pre></div>
+
+
+<h4 id="features">features</h4>
+<p>Both <strong>input_features</strong> and <strong>output_features</strong> configs are simple dicts that have the following schema</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">):</span> <span class="nb">any</span> <span class="n">of</span> <span class="n">COLUMN_DATA_TYPES</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">(</span><span class="s1">&#39;encoder_class&#39;</span><span class="p">):</span> <span class="nb">object</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">(</span><span class="s1">&#39;encoder_attrs&#39;</span><span class="p">):</span> <span class="nb">dict</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<div class="admonition note">
+<ul>
+<li><strong>name</strong>: is the name of the column as it is in the input data frame</li>
+<li><strong>type</strong>: is the type of data contained. Where out of the box, supported COLUMN_DATA_TYPES are <code>NUMERIC, CATEGORICAL, DATETIME, IMAGE, TEXT, TIME_SERIES</code>:</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">If you specify the type, lightwood will use the default encoder for that type, however, you can specify/define any encoder that you want to use. </p>
+<ul>
+<li><strong>encoder_class</strong>: This is if you want to replace the default encoder with a different one, so you put the encoder class there</li>
+<li><strong>encoder_attrs</strong>: These are the attributes that you want to setup on the encoder once the class its initialized </li>
+</ul>
+</div>
+</div>
+<h4 id="mixer">mixer</h4>
+<p>The <strong>default_mixer</strong> key, provides information as to what mixer to use. The schema for this variable is as follows:</p>
+<div class="codehilite"><pre><span></span><span class="n">mixer_schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="p">({</span>
+    <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">(</span><span class="s1">&#39;attrs&#39;</span><span class="p">):</span> <span class="nb">dict</span>
+<span class="p">})</span>
+</pre></div>
+
+
+<div class="admonition note">
+<ul>
+<li><strong>class</strong>: Its the actual class, that defines the Mixer, you can use any of the BUILTIN_MIXERS or pass your own.</li>
+<li><strong>attrs</strong>: This is a dictionary containing the attributes you want to replace on the mixer object once its initialized. We do this, so you have maximum flexibility as to what you can customize on your Mixers.</li>
+</ul>
+</div>
+<h2 id="learn">learn()</h2>
+<div class="codehilite"><pre><span></span><span class="n">my_predictor</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">from_data</span><span class="o">=</span><span class="n">pandas_dataframe</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="admonition note">
+<p>This method is used to make the predictor learn from some data, thus the learn method takes the following arguments.</p>
+<ul>
+<li><strong>from_data</strong>: A pandas dataframe, that has some or all the columns in the config. The reason why we decide to only suppor pandas dataframes, its because, its easy to load any data to a pandas draframe, and spark for python dataframe is a format we support.</li>
+<li><strong>test_data</strong>: (Optional) This is if you want to specify what data to test with, if no test_data passed, lightwood will break the from_data into test and train automatically.</li>
+<li><strong>callback_on_iter</strong>: (Optional) This is function callback that is called every 100 epocs the during the learn process.</li>
+</ul>
+</div>
+<h2 id="predict">predict()</h2>
+<div class="codehilite"><pre><span></span><span class="n">my_predictor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">when</span><span class="o">=</span><span class="p">{</span><span class="o">..</span><span class="p">}</span> <span class="o">|</span> <span class="n">when_data</span><span class="o">=</span><span class="n">pandas_dataframe</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="admonition note">
+<p>This method is used to make predictions and it can take one of the following arguments</p>
+<ul>
+<li><strong>when</strong>: this is a dictionary of conditions to predict under.</li>
+<li><strong>when_data</strong>: Sometimes you want to predict more than one row a ta time, so here it is: a pandas dataframe containing the conditional values you want to use to make a prediction.</li>
+</ul>
+</div>
+<h2 id="save">save()</h2>
+<div class="codehilite"><pre><span></span><span class="n">my_predictor</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path_to</span><span class="o">=</span><span class="n">string</span> <span class="n">to</span> <span class="n">path</span><span class="p">)</span>
+</pre></div>
+
+
+<div class="admonition note">
+<p>Use this method to save the predictor into a desired path</p>
+</div>
+<h2 id="calculate_accuracy">calculate_accuracy()</h2>
+<div class="codehilite"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="n">my_predictor</span><span class="o">.</span><span class="n">calculate_accuracy</span><span class="p">(</span><span class="n">from_data</span><span class="o">=</span><span class="n">data_source</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="admonition note">
+<p>Returns the predictors overall accurary. </p>
+</div>
+                
+                  
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href=".." title="Home" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Home
+              </span>
+            </div>
+          </a>
+        
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        powered by
+        <a href="https://www.mkdocs.org">MkDocs</a>
+        and
+        <a href="https://squidfunk.github.io/mkdocs-material/">
+          Material for MkDocs</a>
+      </div>
+      
+  <div class="md-footer-social">
+    <link rel="stylesheet" href="../assets/fonts/font-awesome.css">
+    
+      <a href="https://github.com/mindsdb/lightwood" class="md-footer-social__link fa fa-github"></a>
+    
+      <a href="https://twitter.com/mindsdb" class="md-footer-social__link fa fa-twitter"></a>
+    
+      <a href="https://www.mindsdb.com" class="md-footer-social__link fa fa-link"></a>
+    
+  </div>
+
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/application.267712eb.js"></script>
+      
+      <script>app.initialize({version:"1.0.4",url:{base:".."}})</script>
+      
+    
+  </body>
+</html>
