@@ -2,15 +2,14 @@ from dataskillet.constants.query_parser import *
 from dataskillet.classes.query_elements.helpers.parser_helpers import *
 
 from dataskillet.classes.query_elements.columns import Columns, Column
-from dataskillet.classes.query_elements.from_statement import FromStatement
 from dataskillet.classes.query_elements.table import Table
 
 class Select:
 
-    def __init__(self, columns = ALL, from_statement = None, where = None, group_by = None, having = None, order_by = None, limit = None, offset = None):
+    def __init__(self, columns = ALL, from_table = None, where = None, group_by = None, having = None, order_by = None, limit = None, offset = None):
 
         self.columns = columns
-        self.from_statement = from_statement
+        self.from_table = from_table
         self.where = where
         self.group_by = group_by
         self.having = having
@@ -22,12 +21,17 @@ class Select:
         return to_dict(self) == to_dict(other)
 
     @staticmethod
-    def parse_string(str):
+    def parse(str_or_tokens):
 
-        tokens = tokenize(str)
+        if type(str_or_tokens) == type([]):
+            tokens = str_or_tokens
+            str = ' '.join(str_or_tokens)
+        else:
+            str = str_or_tokens
+            tokens = tokenize(str_or_tokens)
 
         columns = ALL
-        from_statement = (None, None)
+        from_table = (None, None)
         where = None
         group_by = None
         having = None
@@ -59,8 +63,7 @@ class Select:
 
         pointer += offset
 
-        columns_str = ' '.join(columns_tokens)
-        columns = Columns.parse_string(columns_str)
+        columns = Columns.parse(columns_tokens)
 
 
 
@@ -81,14 +84,15 @@ class Select:
         else:
             pointer += offset
 
-        from_statement_str = ' '.join(from_statement_tokens)
-        from_statement = FromStatement.parse_string(from_statement_str)
+        from_table = Table.parse(from_statement_tokens)
 
-        return Select(columns=columns, from_statement = from_statement)
+        return Select(columns=columns, from_table= from_table)
 
     def __str__(self):
         import pprint
-        return pprint.pformat(to_dict(self), depth=3)
+        return pprint.pformat(to_dict(self), depth=None)
+
+
 
     @staticmethod
     def test():
@@ -96,24 +100,28 @@ class Select:
         queries = [
             (
                 'select * from table_1',
-                Select(columns=Columns(all=True))
+                Select(columns=Columns(all=True), from_table=Table('table_1'))
             ),
             (
                 'select sum(a, "all") as sumi from table_1',
-                Select(columns=Columns([Column('a')])) #, from_statement=Table('table_1'))
+                Select(columns=Columns([Column('sum(a, "all")','sumi')]), from_table=Table('table_1'))
             ),
             (
                 'select a, b as d from table_1',
-                Select(columns=[Column('a'), Column('b', 'd')], from_statement=Table('table_1'))
+                Select(columns=Columns([Column('a'), Column('b', 'd')]), from_table=Table('table_1'))
             )
         ]
 
         for q in queries:
 
-            q0 = Select.parse_string(q[0])
+            q0 = Select.parse(q[0])
+            print("=====")
             print(q[0])
+            print("\n")
             print(q0)
+            print("\n")
             print(q[1])
+            print("\n")
             if q0 != q[1]:
                 print('error queries dont match')
 

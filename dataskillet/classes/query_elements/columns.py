@@ -8,12 +8,19 @@ class Columns:
         self.all = all
 
     @staticmethod
-    def parse_string(str):
+    def parse(str_or_tokens):
+
+        if type(str_or_tokens) == type([]):
+            tokens = str_or_tokens
+            str = ' '.join(str_or_tokens)
+        else:
+            str = str_or_tokens
+            tokens = tokenize(str_or_tokens)
 
         distinct = False
-        tokens = tokenize(str)
         all = False
         columns = []
+
         if tokens[0].lower() == 'distinct':
             distinct = True
             tokens = tokens[1:]
@@ -35,7 +42,7 @@ class Columns:
 
                 if token[-1] == ',' or i == len(tokens) -1:
 
-                    columns += [Column.parse_string(' '.join(current_column_tokens))]
+                    columns += [Column.parse(' '.join(current_column_tokens))]
                     current_column_tokens = []
 
         return Columns(columns=columns, distinct=distinct, all=all)

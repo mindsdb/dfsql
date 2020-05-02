@@ -8,9 +8,15 @@ class Column:
         self.alias = alias
 
     @staticmethod
-    def parse_string(str):
+    def parse(str_or_tokens):
 
-        tokens = tokenize(str)
+        if type(str_or_tokens) == type([]):
+            tokens = str_or_tokens
+            str = ' '.join(str_or_tokens)
+        else:
+            str = str_or_tokens
+            tokens = tokenize(str_or_tokens)
+
 
         if len(tokens) >= 2:
             if tokens[1].lower() != 'as' or len(tokens)>3 or len(tokens) == 2:
