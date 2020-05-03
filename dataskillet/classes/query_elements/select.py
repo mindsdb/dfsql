@@ -27,7 +27,7 @@ class Select:
     def parse(str_or_tokens):
         """
         Parse a string o a tokenized string
-        
+
         :param str_or_tokens:
         :return:
         """
