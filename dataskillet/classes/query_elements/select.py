@@ -3,25 +3,34 @@ from dataskillet.classes.query_elements.helpers.parser_helpers import *
 
 from dataskillet.classes.query_elements.columns import Columns, Column
 from dataskillet.classes.query_elements.table import Table
+from dataskillet.classes.query_elements.where import Where
+from dataskillet.classes.query_elements.limit import Limit
+from dataskillet.classes.query_elements.order_by import OrderBy
+from dataskillet.classes.query_elements.group_by import GroupBy
+
 
 class Select:
 
-    def __init__(self, columns = ALL, from_table = None, where = None, group_by = None, having = None, order_by = None, limit = None, offset = None):
+    def __init__(self, columns = ALL, from_table = None, where = None, group_by = None,  order_by = None, limit = None):
 
         self.columns = columns
         self.from_table = from_table
         self.where = where
         self.group_by = group_by
-        self.having = having
         self.order_by = order_by
         self.limit = limit
-        self.offset = offset
 
     def __eq__(self, other):
         return to_dict(self) == to_dict(other)
 
     @staticmethod
     def parse(str_or_tokens):
+        """
+        Parse a string o a tokenized string
+        
+        :param str_or_tokens:
+        :return:
+        """
 
         if type(str_or_tokens) == type([]):
             tokens = str_or_tokens
@@ -30,63 +39,67 @@ class Select:
             str = str_or_tokens
             tokens = tokenize(str_or_tokens)
 
-        columns = ALL
-        from_table = (None, None)
+        # ##############
+        # Tokenize statement and get tokens per section on query
+        # ##############
+
+        statements = get_tokens_until_words(tokens,['select', 'from', 'where', 'group by', 'order by', 'limit'])
+        statements_order = [s['word'] for s in statements]
+
+        _index_of = lambda ix: statements_order.index(ix) if ix in statements_order else None
+        _tokens_of = lambda ix: statements[_index_of(ix)]['tokens'] if _index_of(ix) is not None else None
+
+        # Make sure that structure of query is valid
+        if _index_of('select') != 0 or _index_of('from') != 1:
+            raise Exception('select string must start with SELECT <what> FROM <from statement> ...: {str}'.format(str=str))
+
+        for s in statements:
+            if s['match_count'] > 1:
+                raise Exception('{word} was found more than once in query: {str}'.format(word=s['word'].upper() ,str=str))
+            if len(s['tokens']) == 0:
+                raise Exception('{word} has no arguments in query: {str}'.format(word=s['word'].upper(), str=str))
+
+        # ################
+        # get the columns that were selected
+        # ################
+
+        columns = Columns.parse(_tokens_of('select'))
+
+        # ################
+        # get the tables we are querying to
+        # ################
+
+        from_table = Table.parse(_tokens_of('from'))
+
+        # ################
+        # get the where
+        # ################
         where = None
+        if _tokens_of('where'):
+            where = Where.parse(_tokens_of('where'))
+
+        # ################
+        # get the group by
+        # ################
         group_by = None
-        having = None
+        if _tokens_of('group by'):
+            group_by = GroupBy.parse(_tokens_of('group by'))
+
+        # ################
+        # get the order by
+        # ################
         order_by = None
+        if _tokens_of('order by'):
+            order_by = OrderBy.parse(_tokens_of('order by'))
+
+        # ################
+        # get the limit
+        # ################
         limit = None
-        offset = None
+        if _tokens_of('limit'):
+            limit = Limit.parse(_tokens_of('limit'))
 
-        end = False
-
-        # ################
-        # first there should be select
-        # ################
-
-        if tokens[0].lower() != 'select':
-            raise Exception('select string must start with select command: {str}'.format(str=str))
-
-        pointer = 1
-
-
-        # ################
-        # then parse the columns to select
-        # ################
-
-        columns_tokens, offset = get_tokens_until_word(tokens[pointer:], 'from')
-
-
-        if columns_tokens is None:
-            raise Exception('select expecting atleast one column name to select but from statement found instead: {str}'.format(str=str))
-
-        pointer += offset
-
-        columns = Columns.parse(columns_tokens)
-
-
-
-        # ################
-        # then parse the columns to from statement
-        # ################
-
-        if tokens[pointer] != 'from' or len(tokens) -1 <= pointer:
-            raise Exception('FROM missing: {str}'.format(str=str))
-
-        pointer += 1
-        from_statement_tokens, offset, matched_token = get_tokens_until_words(tokens[pointer:], ['where'])
-
-
-        if from_statement_tokens is None:
-            from_statement_tokens = tokens[pointer:]
-            end = True # no more in the query
-        else:
-            pointer += offset
-
-        from_table = Table.parse(from_statement_tokens)
-
-        return Select(columns=columns, from_table= from_table)
+        return Select(columns=columns, from_table= from_table, where=where, group_by=group_by, order_by=order_by, limit=limit)
 
     def __str__(self):
         import pprint
@@ -96,6 +109,10 @@ class Select:
 
     @staticmethod
     def test():
+        """
+        Method to test this parser
+        :return:
+        """
 
         queries = [
             (
@@ -107,7 +124,7 @@ class Select:
                 Select(columns=Columns([Column('sum(a, "all")','sumi')]), from_table=Table('table_1'))
             ),
             (
-                'select a, b as d from table_1',
+                'select a, b as d from table_1 ',
                 Select(columns=Columns([Column('a'), Column('b', 'd')]), from_table=Table('table_1'))
             )
         ]

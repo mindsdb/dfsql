@@ -20,7 +20,7 @@ class Column:
 
         if len(tokens) >= 2:
             if tokens[1].lower() != 'as' or len(tokens)>3 or len(tokens) == 2:
-                raise Exception('strange column definition, allowed format <col> [optional: as <col_alias>]'.format(str=str))
+                raise Exception('strange column definition, allowed format <col> [optional: as <col_alias>]: {str}'.format(str=str))
             name = tokens[0]
             alias = tokens[2]
 

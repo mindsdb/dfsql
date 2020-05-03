@@ -22,14 +22,51 @@ def get_tokens_until_words(tokens, until_words):
     :param until_words: stop word list
     :return: None if no match, else subtokens, match_index, matched word
     """
-    ret = []
+    ret = {}
 
-    for i,token in enumerate(tokens):
-        if token.lower() in [until_words]:
-            return ret, i, token
-        ret += [token]
+    tokens_left = tokens
 
-    return None, None, None
+    match_words_map = {word:{'word':word, 'match_index': -1, 'match_count': 0, 'tokens':[]} for word in until_words}
+
+
+
+    for i,word in enumerate(tokens):
+
+        if i+1 >= len(tokens):
+            next_word = None
+        else:
+            next_word = tokens[i+1]
+
+        for match_words in until_words:
+            match_tokens = match_words.split()
+
+            if word.lower() == match_tokens[0]:
+
+                if len(match_tokens) == 2:
+                    if next_word is None or next_word.lower() != match_tokens[1]:
+                        continue
+
+                match_words_map[match_words]['match_index'] = i
+                match_words_map[match_words]['match_count'] += 1
+
+
+    match_order = sorted(match_words_map.values(), key=lambda word_dict: word_dict['match_index'])
+
+    matched = [data for data in match_order if data['match_index']>=0]
+    if len(matched) ==0:
+        return []
+
+    if matched[0]['match_index'] > 0:
+        matched = [{'word': '_START_', 'match_index': 0, 'match_count':0, 'tokens':[]}] + matched
+
+    for i, match_dict in enumerate(matched):
+        next_index = len(tokens) if i == len(matched) -1 else matched[i+1]['match_index']
+        offset = 1 if match_dict['word'] != '_START_' else 0
+        match_dict['tokens'] = tokens[match_dict['match_index']+offset:next_index]
+
+    return matched
+
+
 
 def tokenize(string):
 
@@ -88,10 +125,14 @@ def tokenize(string):
         word += string[i]
 
         if i == len(mapping)-1:
-            tokens += [word.strip()]
+            if word.strip() != '':
+                tokens += [word.strip()]
 
 
     return tokens
+
+
+
 
 def to_dict(obj, class_key=None):
     """
