@@ -1,5 +1,6 @@
 import pytest
-from dataskillet.sql_parser import parse_sql, Select, Expression, Constant, Star, Identifier, BinaryOperation, FunctionCall, OrderBy
+from dataskillet.sql_parser import (parse_sql, Select, Constant, Star, Identifier, BinaryOperation, FunctionCall,
+                                    OrderBy, Join, BooleanOperation)
 
 
 class TestParseSelect:
@@ -24,7 +25,7 @@ class TestParseSelect:
                                                             Identifier("column1", alias='aliased'),
                                                             BinaryOperation(op="+",
                                                                             args_=(Identifier('column1'),
-                                                                                  Identifier('column2'))
+                                                                                   Identifier('column2'))
                                                                             )
                                                             ],
                                                    from_table=[Identifier('t1')]))
@@ -39,10 +40,10 @@ class TestParseSelect:
         assert str(parse_sql(query)) == query
 
         assert str(parse_sql(query)) == str(Select(targets=[Identifier("column1"), Identifier("column2")],
-                                              from_table=[Identifier('t1')],
-                                              where=BinaryOperation(op="=",
-                                                                    args_=(Identifier('column1'), Constant(1))
-                                                                    )))
+                                                   from_table=[Identifier('t1')],
+                                                   where=BinaryOperation(op="=",
+                                                                         args_=(Identifier('column1'), Constant(1))
+                                                                         )))
 
     def test_select_group_by(self):
         query = """SELECT column1, column2, sum(column3) as total FROM t1 GROUP BY column1, column2"""
@@ -52,8 +53,8 @@ class TestParseSelect:
         assert str(parse_sql(query)) == str(Select(targets=[Identifier("column1"),
                                                             Identifier("column2"),
                                                             FunctionCall(op="sum",
-                                                                        args_=(Identifier("column3"),),
-                                                                               alias='total')],
+                                                                         args_=(Identifier("column3"),),
+                                                                         alias='total')],
                                                    from_table=[Identifier('t1')],
                                                    group_by=[Identifier("column1"), Identifier("column2")]))
 
@@ -62,11 +63,12 @@ class TestParseSelect:
         assert str(parse_sql(query)) == query
         assert str(parse_sql(query)) == str(Select(targets=[Star()],
                                                    from_table=[Identifier('t1')],
-                                                    order_by=[
-                                                        OrderBy(Identifier('column1'), direction='ASC'),
-                                                        OrderBy(Identifier('column2')),
-                                                        OrderBy(Identifier('column3'), direction='DESC', nulls='NULLS FIRST')],
-                                                    ))
+                                                   order_by=[
+                                                       OrderBy(Identifier('column1'), direction='ASC'),
+                                                       OrderBy(Identifier('column2')),
+                                                       OrderBy(Identifier('column3'), direction='DESC',
+                                                               nulls='NULLS FIRST')],
+                                                   ))
 
     def test_select_limit_offset(self):
         query = """SELECT * FROM t1 LIMIT 1 OFFSET 2"""
@@ -79,10 +81,53 @@ class TestParseSelect:
     def test_select_from_implicit_join(self):
         query = """SELECT * FROM t1, t2"""
         assert str(parse_sql(query)) == query
+        assert str(parse_sql(query)) == str(Select(targets=[Star()],
+                                                   from_table=[Identifier('t1'), Identifier('t2')]))
 
     def test_select_from_inner_join(self):
-        query = """SELECT * FROM t1 INNER JOIN t2 ON t1.x1 = t2.x2"""
+        query = """SELECT * FROM t1 INNER JOIN t2 ON t1.x1 = t2.x2 AND t1.x2 = t2.x2"""
         assert str(parse_sql(query)) == query
+        assert str(parse_sql(query)) == str(Select(targets=[Star()],
+                                                   from_table=[Join(join_type='INNER JOIN',
+                                                                    left=Identifier('t1'),
+                                                                    right=Identifier('t2'),
+                                                                    condition=
+                                                                    BooleanOperation(op='AND',
+                                                                                     args_=[
+                                                                                         BinaryOperation(op='=',
+                                                                                                         args_=(
+                                                                                                             Identifier(
+                                                                                                                 't1.x1'),
+                                                                                                             Identifier(
+                                                                                                                 't2.x2'))),
+                                                                                         BinaryOperation(op='=',
+                                                                                                         args_=(
+                                                                                                             Identifier(
+                                                                                                                 't1.x2'),
+                                                                                                             Identifier(
+                                                                                                                 't2.x2'))),
+                                                                                     ])
+
+                                                                    )]))
+
+    def test_select_from_different_join_types(self):
+        join_types = ['INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN', 'FULL JOIN']
+        for join in join_types:
+            query = f"""SELECT * FROM t1 {join} t2 ON t1.x1 = t2.x2"""
+            assert str(parse_sql(query)) == query
+            assert str(parse_sql(query)) == str(Select(targets=[Star()],
+                                                       from_table=[Join(join_type=join,
+                                                                        left=Identifier('t1'),
+                                                                        right=Identifier('t2'),
+                                                                        condition=
+                                                                        BinaryOperation(op='=',
+                                                                                        args_=(
+                                                                                            Identifier(
+                                                                                                't1.x1'),
+                                                                                            Identifier(
+                                                                                                't2.x2'))),
+
+                                                                        )]))
 
     def test_select_from_subquery(self):
         pass

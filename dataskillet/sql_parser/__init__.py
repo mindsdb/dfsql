@@ -2,8 +2,9 @@ from dataskillet.sql_parser.select import Select
 from dataskillet.sql_parser.constant import Constant
 from dataskillet.sql_parser.expression import Expression, Star
 from dataskillet.sql_parser.identifier import Identifier
-from dataskillet.sql_parser.operation import BinaryOperation, FunctionCall
+from dataskillet.sql_parser.operation import BinaryOperation, FunctionCall, BooleanOperation, LOOKUP_BOOL_OPEARTION
 from dataskillet.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
+from dataskillet.sql_parser.join import Join, LOOKUP_JOIN_TYPE
 
 import pglast
 
@@ -32,13 +33,17 @@ def parse_expression(stmt):
 
 
 def parse_column_ref(stmt):
-    field = next(iter(stmt['fields']))
-    field_type = next(iter(field.keys()))
+    fields = stmt['fields']
+    field_type = next(iter(fields[0].keys()))
     if field_type == 'A_Star':
         return Star(raw=stmt)
     else:
-        field = field[field_type]['str']
-        return Identifier(value=field, raw=stmt)
+        value = []
+        for field in fields:
+            field_type = next(iter(field.keys()))
+            value.append(field[field_type]['str'])
+        value = '.'.join(value)
+        return Identifier(value=value, raw=stmt)
 
 
 def parse_rangevar(stmt):
@@ -56,12 +61,22 @@ def parse_func_call(stmt):
                         raw=stmt)
 
 
+def parse_bool_expr(stmt):
+    op = LOOKUP_BOOL_OPEARTION[stmt['boolop']]
+    args = [parse_statement(arg) for arg in stmt['args']]
+    return BooleanOperation(op=op,
+                        args_=args,
+                        raw=stmt)
+
+
 def parse_statement(stmt):
     target_type = next(iter(stmt.keys()))
     if target_type == 'A_Const':
         return parse_constant(stmt['A_Const'])
     elif target_type == 'A_Expr':
         return parse_expression(stmt['A_Expr'])
+    elif target_type == 'BoolExpr':
+        return parse_bool_expr(stmt['BoolExpr'])
     elif target_type == 'ColumnRef':
         return parse_column_ref(stmt['ColumnRef'])
     elif target_type == 'RangeVar':
@@ -88,6 +103,30 @@ def parse_target(stmt):
     return result
 
 
+def parse_join(stmt):
+    join_expr = stmt['JoinExpr']
+    join_type = LOOKUP_JOIN_TYPE[join_expr['jointype']]
+    left = parse_statement(join_expr['larg'])
+    right = parse_statement(join_expr['rarg'])
+    condition = parse_statement(join_expr['quals'])
+    return Join(join_type=join_type,
+                left=left,
+                right=right,
+                condition=condition,
+                raw=stmt)
+
+
+def parse_from_clause(stmt):
+    from_table = []
+    for from_clause in stmt:
+        target_type = next(iter(from_clause.keys()))
+        if target_type == 'JoinExpr':
+            from_table.append(parse_join(from_clause))
+        else:
+            from_table.append(parse_statement(from_clause))
+    return from_table
+
+
 def parse_select_statement(select_stmt):
     print(select_stmt)
 
@@ -97,9 +136,7 @@ def parse_select_statement(select_stmt):
 
     from_table = None
     if select_stmt.get('fromClause'):
-        from_table = []
-        for stmt in select_stmt['fromClause']:
-            from_table.append(parse_statement(stmt))
+        from_table = parse_from_clause(select_stmt['fromClause'])
 
     where = parse_statement(select_stmt.get('whereClause')) if select_stmt.get('whereClause') else None
 

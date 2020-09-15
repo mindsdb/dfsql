@@ -17,6 +17,15 @@ class BinaryOperation(Operation):
         return self.maybe_add_alias(f'{str(self.args[0])} {self.op} {str(self.args[1])}')
 
 
+LOOKUP_BOOL_OPEARTION = {
+    0: 'AND'
+}
+
+class BooleanOperation(Operation):
+    def __str__(self):
+        return f'{str(self.args[0])} {self.op} {str(self.args[1])}'
+
+
 class FunctionCall(Operation):
     def __str__(self):
         args_str = ', '.join([str(arg) for arg in self.args])
