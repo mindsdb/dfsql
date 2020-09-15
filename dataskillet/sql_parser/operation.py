@@ -7,26 +7,32 @@ class Operation(Statement):
         self.op = op
         self.args = args_
 
-    def __str__(self):
-        args_str = ','.join([str(arg) for arg in self.args])
+    def to_string(self, *args, **kwargs):
+        args_str = ','.join([arg.to_string() for arg in self.args])
         return self.maybe_add_alias(f'{self.op}({args_str})')
 
 
 class BinaryOperation(Operation):
-    def __str__(self):
-        return self.maybe_add_alias(f'{str(self.args[0])} {self.op} {str(self.args[1])}')
+    def to_string(self, *args, **kwargs):
+        return self.maybe_add_alias(f'{self.args[0].to_string()} {self.op} {self.args[1].to_string()}')
 
 
 LOOKUP_BOOL_OPEARTION = {
     0: 'AND'
 }
 
+
 class BooleanOperation(Operation):
-    def __str__(self):
-        return f'{str(self.args[0])} {self.op} {str(self.args[1])}'
+    def to_string(self, *args, **kwargs):
+        return f'{self.args[0].to_string()} {self.op} {self.args[1].to_string()}'
 
 
 class FunctionCall(Operation):
-    def __str__(self):
-        args_str = ', '.join([str(arg) for arg in self.args])
+    def to_string(self, *args, **kwargs):
+        args_str = ', '.join([arg.to_string() for arg in self.args])
         return self.maybe_add_alias(f'{self.op}({args_str})')
+
+
+class InOperation(BinaryOperation):
+    def __init__(self, *args, **kwargs):
+        super().__init__(op='IN', *args, **kwargs)

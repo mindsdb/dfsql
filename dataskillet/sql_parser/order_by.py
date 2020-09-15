@@ -20,8 +20,8 @@ class OrderBy(Statement):
         self.direction = direction
         self.nulls = nulls
 
-    def __str__(self):
-        out_str = str(self.field)
+    def to_string(self, *args, **kwargs):
+        out_str = self.field.to_string()
         if self.direction != 'default':
             out_str += f' {self.direction}'
         if self.nulls != 'default':

@@ -17,5 +17,5 @@ class Join(Statement):
         self.right = right
         self.condition = condition
 
-    def __str__(self):
-        return f'{str(self.left)} {self.join_type} {str(self.right)} ON {str(self.condition)}'
+    def to_string(self, *args, **kwargs):
+        return f'{self.left.to_string()} {self.join_type} {self.right.to_string()} ON {self.condition.to_string()}'

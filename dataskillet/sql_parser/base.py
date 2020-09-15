@@ -9,5 +9,8 @@ class Statement:
         else:
             return some_str
 
-    def __str__(self):
+    def to_string(self, *args, **kwargs):
         return self.raw
+
+    def __str__(self):
+        return self.to_string()

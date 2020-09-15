@@ -14,35 +14,40 @@ class Select(Statement):
         self.limit = limit
         self.offset = offset
 
-    def maybe_add_alias(self, some_str):
+    def maybe_add_alias(self, some_str, is_top_select):
         if self.alias:
             return f'({some_str}) as {self.alias}'
-        else:
+        elif is_top_select:
             return some_str
+        else:
+            return f'({some_str})'
 
-    def __str__(self):
-        targets_str = ', '.join([str(out) for out in self.targets])
+    def to_string(self, *args, is_top_select=False, **kwargs):
+        targets_str = ', '.join([out.to_string() for out in self.targets])
 
         out_str = f"""SELECT {targets_str}"""
 
         if self.from_table is not None:
-            from_table_str = ', '.join([str(out) for out in self.from_table])
+            from_table_str = ', '.join([out.to_string() for out in self.from_table])
             out_str += f' FROM {from_table_str}'
 
         if self.where is not None:
-            out_str += f' WHERE {str(self.where)}'
+            out_str += f' WHERE {self.where.to_string()}'
 
         if self.group_by is not None:
-            group_by_str = ', '.join([str(out) for out in self.group_by])
+            group_by_str = ', '.join([out.to_string() for out in self.group_by])
             out_str += f' GROUP BY {group_by_str}'
 
         if self.order_by is not None:
-            order_by_str = ', '.join([str(out) for out in self.order_by])
+            order_by_str = ', '.join([out.to_string() for out in self.order_by])
             out_str += f' ORDER BY {order_by_str}'
 
         if self.limit is not None:
-            out_str += f' LIMIT {str(self.limit)}'
+            out_str += f' LIMIT {self.limit.to_string()}'
 
         if self.offset is not None:
-            out_str += f' OFFSET {str(self.offset)}'
-        return self.maybe_add_alias(out_str)
+            out_str += f' OFFSET {self.offset.to_string()}'
+        return self.maybe_add_alias(out_str, is_top_select=is_top_select)
+
+    def __str__(self):
+        return self.to_string(is_top_select=True)

@@ -30,6 +30,10 @@ class TestParseSelect:
                                                             ],
                                                    from_table=[Identifier('t1')]))
 
+    def test_select_distinct(self):
+        query = """SELECT DISTINCT column1 FROM t1"""
+        assert str(parse_sql(query)) == query
+
     def test_select_from_aliased(self):
         query = """SELECT * FROM t1 as t2"""
         assert str(parse_sql(query)) == query
@@ -57,6 +61,10 @@ class TestParseSelect:
                                                                          alias='total')],
                                                    from_table=[Identifier('t1')],
                                                    group_by=[Identifier("column1"), Identifier("column2")]))
+
+    def test_select_groupby_having(self):
+        query = """SELECT column1 FROM t1 GROUP BY column1 HAVING column1 != 1"""
+        assert str(parse_sql(query)) == query
 
     def test_select_order_by(self):
         query = """SELECT * FROM t1 ORDER BY column1 ASC, column2, column3 DESC NULLS FIRST"""
@@ -130,10 +138,26 @@ class TestParseSelect:
                                                                         )]))
 
     def test_select_from_subquery(self):
-        pass
+        query = f"""SELECT * FROM (SELECT column1 FROM t1) as sub"""
+        assert str(parse_sql(query)) == query
+        assert str(parse_sql(query)) == str(Select(targets=[Star()],
+                                                   from_table=[
+                                                       Select(targets=[Identifier('column1')],
+                                                              from_table=[Identifier('t1')],
+                                                              alias='sub'),
+                                                   ]))
 
     def test_select_subquery_target(self):
-        pass
+        query = f"""SELECT *, (SELECT 1) FROM t1"""
+        assert str(parse_sql(query)) == query
+        assert str(parse_sql(query)) == str(Select(targets=[Star(), Select(targets=[Constant(1)])],
+                                                   from_table=[Identifier('t1')]))
+
+        query = f"""SELECT *, (SELECT 1) as ones FROM t1"""
+        assert str(parse_sql(query)) == query
+        assert str(parse_sql(query)) == str(Select(targets=[Star(), Select(targets=[Constant(1)], alias='ones')],
+                                                   from_table=[Identifier('t1')]))
 
     def test_select_subquery_where(self):
-        pass
+        query = f"""SELECT * WHERE column1 IN (SELECT column2 FROM t2)"""
+        assert str(parse_sql(query)) == query

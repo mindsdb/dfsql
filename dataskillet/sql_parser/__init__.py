@@ -2,7 +2,7 @@ from dataskillet.sql_parser.select import Select
 from dataskillet.sql_parser.constant import Constant
 from dataskillet.sql_parser.expression import Expression, Star
 from dataskillet.sql_parser.identifier import Identifier
-from dataskillet.sql_parser.operation import BinaryOperation, FunctionCall, BooleanOperation, LOOKUP_BOOL_OPEARTION
+from dataskillet.sql_parser.operation import BinaryOperation, FunctionCall, BooleanOperation, LOOKUP_BOOL_OPEARTION, InOperation
 from dataskillet.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
 from dataskillet.sql_parser.join import Join, LOOKUP_JOIN_TYPE
 
@@ -69,6 +69,25 @@ def parse_bool_expr(stmt):
                         raw=stmt)
 
 
+def parse_sublink(stmt):
+    sublink_type = stmt['subLinkType']
+    subselect = stmt['subselect']
+    subselect = parse_select_statement(subselect)
+
+    if sublink_type == 2:
+        # IN clause
+        leftarg = parse_statement(stmt['testexpr'])
+        return InOperation(
+            args_ = (
+                leftarg,
+                subselect
+            ),
+            raw=stmt,
+        )
+    else:
+        return subselect
+
+
 def parse_statement(stmt):
     target_type = next(iter(stmt.keys()))
     if target_type == 'A_Const':
@@ -83,6 +102,10 @@ def parse_statement(stmt):
         return parse_rangevar(stmt['RangeVar'])
     elif target_type == 'FuncCall':
         return parse_func_call(stmt['FuncCall'])
+    elif target_type == 'SubLink':
+        return parse_sublink(stmt['SubLink'])
+    else:
+        raise Exception(f'No idea how to parse {str(stmt)}')
 
 
 def parse_order_by(stmt):
@@ -122,6 +145,11 @@ def parse_from_clause(stmt):
         target_type = next(iter(from_clause.keys()))
         if target_type == 'JoinExpr':
             from_table.append(parse_join(from_clause))
+        elif target_type == 'RangeSubselect':
+            alias = from_clause['RangeSubselect']['alias']['Alias']['aliasname']
+            subquery = parse_select_statement(from_clause['RangeSubselect']['subquery'])
+            subquery.alias = alias
+            from_table.append(subquery)
         else:
             from_table.append(parse_statement(from_clause))
     return from_table
@@ -129,6 +157,7 @@ def parse_from_clause(stmt):
 
 def parse_select_statement(select_stmt):
     print(select_stmt)
+    select_stmt = select_stmt['SelectStmt']
 
     targets = []
     for target in select_stmt['targetList']:
@@ -173,7 +202,7 @@ def parse_select_statement(select_stmt):
 def parse_sql(sql_query):
     sql_tree = pglast.parse_sql(sql_query)[0]
     try:
-        select_statement = sql_tree['RawStmt']['stmt']['SelectStmt']
+        select_statement = sql_tree['RawStmt']['stmt']
     except KeyError:
         raise Exception('SELECT excepted, but not found')
 
