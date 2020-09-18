@@ -3,7 +3,7 @@ from dataskillet.sql_parser.exceptions import SQLParsingException
 
 OPERATIONS = (
               # Math operators
-              '=', '<>',
+              '=', '<>', '!=', '<', '>', '>=', '<=',
               '+', '-', '*', '/', '%', '^',
 
               # Boolean
@@ -11,12 +11,26 @@ OPERATIONS = (
 
               # Functions
               'max', 'min', 'sum', 'avg',
+
+              # Comparison predicates
+              'IS TRUE', 'IS FALSE',
+              'IS NULL', 'IS NOT NULL',
               )
 
 LOOKUP_BOOL_OPERATION = {
     0: 'AND',
     1: 'OR',
     2: 'NOT'
+}
+
+LOOKUP_BOOL_TEST = {
+    0: 'IS TRUE',
+    2: 'IS FALSE',
+}
+
+LOOKUP_NULL_TEST = {
+    0: "IS NULL",
+    1: "IS NOT NULL",
 }
 
 
@@ -55,6 +69,11 @@ class UnaryOperation(Operation):
     def assert_arguments(self):
         if len(self.args) != 1:
             raise SQLParsingException(f'Expected one argument for operation "{self.op}"')
+
+
+class ComparisonPredicate(UnaryOperation):
+    def to_string(self, *args, **kwargs):
+        return self.maybe_add_alias(f'{self.args[0].to_string()} {self.op}')
 
 
 class FunctionCall(Operation):

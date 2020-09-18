@@ -1,6 +1,6 @@
 import pytest
 from dataskillet.sql_parser import (parse_sql, Select, Constant, Star, Identifier, BinaryOperation, FunctionCall,
-                                    OrderBy, Join, InOperation, SQLParsingException, UnaryOperation)
+                                    OrderBy, Join, InOperation, SQLParsingException, UnaryOperation, ComparisonPredicate)
 
 
 class TestParseSelect:
@@ -181,11 +181,19 @@ class TestParseSelect:
             assert str(parse_sql(query)) == str(Select(targets=[UnaryOperation(op=op, args_=(Identifier("column1"), ))],))
 
     def test_binary_operations(self):
-        unary_operations = ['AND', 'OR', '=', '<>',  '-', '+', '*', '/', '%', '^']
+        unary_operations = ['AND', 'OR', '=', '<>',  '-', '+', '*', '/', '%', '^', '<', '>', '>=', '<=',]
         for op in unary_operations:
             query = f"""SELECT column1 {op} column2"""
             assert str(parse_sql(query)) == query
             assert str(parse_sql(query)) == str(Select(targets=[BinaryOperation(op=op, args_=(Identifier("column1"), Identifier("column2")))],))
+
+    def test_unary_comparison_predicates(self):
+        ops = ['IS NULL', 'IS NOT NULL', 'IS TRUE', 'IS FALSE']
+        for op in ops:
+            print(op)
+            query = f"""SELECT column1 {op}"""
+            assert str(parse_sql(query)) == query
+            assert str(parse_sql(query)) == str(Select(targets=[ComparisonPredicate(op=op, args_=(Identifier("column1"),))],))
 
     def test_functions(self):
         functions = ['max', 'min', 'avg', 'sum']

@@ -2,7 +2,8 @@ from dataskillet.sql_parser.select import Select
 from dataskillet.sql_parser.constant import Constant
 from dataskillet.sql_parser.expression import Expression, Star
 from dataskillet.sql_parser.identifier import Identifier
-from dataskillet.sql_parser.operation import Operation, BinaryOperation, FunctionCall, LOOKUP_BOOL_OPERATION, InOperation, UnaryOperation, operation_factory
+from dataskillet.sql_parser.operation import Operation, BinaryOperation, FunctionCall, LOOKUP_BOOL_OPERATION, \
+    InOperation, UnaryOperation, operation_factory, LOOKUP_NULL_TEST, ComparisonPredicate, LOOKUP_BOOL_TEST
 from dataskillet.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
 from dataskillet.sql_parser.join import Join, LOOKUP_JOIN_TYPE
 from dataskillet.sql_parser.exceptions import SQLParsingException
@@ -92,6 +93,22 @@ def parse_sublink(stmt):
         return subselect
 
 
+def parse_booltest(stmt):
+    arg = parse_statement(stmt['arg'])
+    op = LOOKUP_BOOL_TEST[stmt['booltesttype']]
+    return ComparisonPredicate(op=op,
+                          args_=(arg,),
+                          raw=stmt)
+
+
+def parse_nulltest(stmt):
+    arg = parse_statement(stmt['arg'])
+    op = LOOKUP_NULL_TEST[stmt['nulltesttype']]
+    return ComparisonPredicate(op=op,
+                          args_=(arg,),
+                          raw=stmt)
+
+
 def parse_statement(stmt):
     target_type = next(iter(stmt.keys()))
     if target_type == 'A_Const':
@@ -108,6 +125,10 @@ def parse_statement(stmt):
         return parse_func_call(stmt['FuncCall'])
     elif target_type == 'SubLink':
         return parse_sublink(stmt['SubLink'])
+    elif target_type == 'NullTest':
+        return parse_nulltest(stmt['NullTest'])
+    elif target_type == 'BooleanTest':
+        return parse_booltest(stmt['BooleanTest'])
     else:
         raise SQLParsingException(f'No idea how to parse {str(stmt)}')
 
