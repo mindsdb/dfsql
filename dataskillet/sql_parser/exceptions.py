@@ -1,0 +1,2 @@
+class SQLParsingException(Exception):
+    pass

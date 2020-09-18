@@ -2,9 +2,11 @@ from dataskillet.sql_parser.select import Select
 from dataskillet.sql_parser.constant import Constant
 from dataskillet.sql_parser.expression import Expression, Star
 from dataskillet.sql_parser.identifier import Identifier
-from dataskillet.sql_parser.operation import BinaryOperation, FunctionCall, BooleanOperation, LOOKUP_BOOL_OPEARTION, InOperation
+from dataskillet.sql_parser.operation import Operation, BinaryOperation, FunctionCall, LOOKUP_BOOL_OPERATION, InOperation, UnaryOperation, operation_factory
 from dataskillet.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
 from dataskillet.sql_parser.join import Join, LOOKUP_JOIN_TYPE
+from dataskillet.sql_parser.exceptions import SQLParsingException
+
 
 import pglast
 
@@ -22,14 +24,18 @@ def parse_constant(stmt):
 
 def parse_expression(stmt):
     op = stmt['name'][0]['String']['str']
-    left_stmt = stmt['lexpr']
-    right_stmt = stmt['rexpr']
+    args = []
+    if stmt.get('lexpr'):
+        left_stmt = stmt['lexpr']
+        left = parse_statement(left_stmt)
+        args.append(left)
 
-    left = parse_statement(left_stmt)
-    right = parse_statement(right_stmt)
-    return BinaryOperation(op=op,
-                           args_=(left, right),
-                           raw=stmt)
+    if stmt.get('rexpr'):
+        right_stmt = stmt['rexpr']
+        right = parse_statement(right_stmt)
+        args.append(right)
+
+    return operation_factory(op=op, args=args, raw=stmt)
 
 
 def parse_column_ref(stmt):
@@ -62,11 +68,9 @@ def parse_func_call(stmt):
 
 
 def parse_bool_expr(stmt):
-    op = LOOKUP_BOOL_OPEARTION[stmt['boolop']]
+    op = LOOKUP_BOOL_OPERATION[stmt['boolop']]
     args = [parse_statement(arg) for arg in stmt['args']]
-    return BooleanOperation(op=op,
-                        args_=args,
-                        raw=stmt)
+    return operation_factory(op=op, args=args, raw=stmt)
 
 
 def parse_sublink(stmt):
@@ -105,7 +109,7 @@ def parse_statement(stmt):
     elif target_type == 'SubLink':
         return parse_sublink(stmt['SubLink'])
     else:
-        raise Exception(f'No idea how to parse {str(stmt)}')
+        raise SQLParsingException(f'No idea how to parse {str(stmt)}')
 
 
 def parse_order_by(stmt):
@@ -163,6 +167,8 @@ def parse_select_statement(select_stmt):
     for target in select_stmt['targetList']:
         targets.append(parse_target(target['ResTarget']))
 
+    distinct = select_stmt.get('distinctClause', None) is not None
+
     from_table = None
     if select_stmt.get('fromClause'):
         from_table = parse_from_clause(select_stmt['fromClause'])
@@ -174,6 +180,10 @@ def parse_select_statement(select_stmt):
         group_by = []
         for stmt in select_stmt['groupClause']:
             group_by.append(parse_statement(stmt))
+
+    having = None
+    if select_stmt.get('havingClause'):
+        having = parse_statement(select_stmt['havingClause'])
 
     order_by = None
     if select_stmt.get('sortClause'):
@@ -191,20 +201,25 @@ def parse_select_statement(select_stmt):
 
     return Select(raw=select_stmt,
                   targets=targets,
+                  distinct=distinct,
                   from_table=from_table,
                   where=where,
                   group_by=group_by,
+                  having=having,
                   order_by=order_by,
                   limit=limit,
                   offset=offset)
 
 
 def parse_sql(sql_query):
-    sql_tree = pglast.parse_sql(sql_query)[0]
+    sql_tree = pglast.parse_sql(sql_query)
+    if len(sql_tree) != 1:
+        raise SQLParsingException('One SELECT statment expected')
+    sql_tree = sql_tree[0]
     try:
         select_statement = sql_tree['RawStmt']['stmt']
     except KeyError:
-        raise Exception('SELECT excepted, but not found')
+        raise SQLParsingException('SELECT excepted, but not found')
 
     out_tree = parse_select_statement(select_statement)
     return out_tree

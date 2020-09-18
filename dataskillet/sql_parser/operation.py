@@ -1,11 +1,38 @@
 from dataskillet.sql_parser.base import Statement
+from dataskillet.sql_parser.exceptions import SQLParsingException
+
+OPERATIONS = (
+              # Math operators
+              '=', '<>',
+              '+', '-', '*', '/', '%', '^',
+
+              # Boolean
+              'NOT', 'OR', 'AND', 'IN',
+
+              # Functions
+              'max', 'min', 'sum', 'avg',
+              )
+
+LOOKUP_BOOL_OPERATION = {
+    0: 'AND',
+    1: 'OR',
+    2: 'NOT'
+}
 
 
 class Operation(Statement):
     def __init__(self, op, args_, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        if op not in OPERATIONS:
+            raise SQLParsingException(f'Unknown operation {op}')
         self.op = op
         self.args = args_
+        self.assert_arguments()
+
+    def assert_arguments(self):
+        if not self.args:
+            raise SQLParsingException(f'Expected arguments for operation "{self.op}"')
 
     def to_string(self, *args, **kwargs):
         args_str = ','.join([arg.to_string() for arg in self.args])
@@ -16,15 +43,18 @@ class BinaryOperation(Operation):
     def to_string(self, *args, **kwargs):
         return self.maybe_add_alias(f'{self.args[0].to_string()} {self.op} {self.args[1].to_string()}')
 
+    def assert_arguments(self):
+        if len(self.args) != 2:
+            raise SQLParsingException(f'Expected two arguments for operation "{self.op}"')
 
-LOOKUP_BOOL_OPEARTION = {
-    0: 'AND'
-}
 
-
-class BooleanOperation(Operation):
+class UnaryOperation(Operation):
     def to_string(self, *args, **kwargs):
-        return f'{self.args[0].to_string()} {self.op} {self.args[1].to_string()}'
+        return self.maybe_add_alias(f'{self.op} {self.args[0].to_string()}')
+
+    def assert_arguments(self):
+        if len(self.args) != 1:
+            raise SQLParsingException(f'Expected one argument for operation "{self.op}"')
 
 
 class FunctionCall(Operation):
@@ -36,3 +66,18 @@ class FunctionCall(Operation):
 class InOperation(BinaryOperation):
     def __init__(self, *args, **kwargs):
         super().__init__(op='IN', *args, **kwargs)
+
+
+def operation_factory(op, args, raw=None):
+    if op == 'IN':
+        return InOperation(args_=args)
+
+    op_class = Operation
+    if len(args) == 2:
+        op_class = BinaryOperation
+    elif len(args) == 1:
+        op_class = UnaryOperation
+
+    return op_class(op=op,
+             args_=args,
+             raw=raw)

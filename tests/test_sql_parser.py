@@ -1,13 +1,13 @@
 import pytest
 from dataskillet.sql_parser import (parse_sql, Select, Constant, Star, Identifier, BinaryOperation, FunctionCall,
-                                    OrderBy, Join, BooleanOperation)
+                                    OrderBy, Join, InOperation, SQLParsingException, UnaryOperation)
 
 
 class TestParseSelect:
 
     def test_no_select(self):
         query = ""
-        with pytest.raises(Exception):
+        with pytest.raises(SQLParsingException):
             parse_sql(query)
 
     def test_basic_select(self):
@@ -63,7 +63,7 @@ class TestParseSelect:
                                                    group_by=[Identifier("column1"), Identifier("column2")]))
 
     def test_select_groupby_having(self):
-        query = """SELECT column1 FROM t1 GROUP BY column1 HAVING column1 != 1"""
+        query = """SELECT column1 FROM t1 GROUP BY column1 HAVING column1 <> 1"""
         assert str(parse_sql(query)) == query
 
     def test_select_order_by(self):
@@ -100,7 +100,7 @@ class TestParseSelect:
                                                                     left=Identifier('t1'),
                                                                     right=Identifier('t2'),
                                                                     condition=
-                                                                    BooleanOperation(op='AND',
+                                                                    BinaryOperation(op='AND',
                                                                                      args_=[
                                                                                          BinaryOperation(op='=',
                                                                                                          args_=(
@@ -161,3 +161,36 @@ class TestParseSelect:
     def test_select_subquery_where(self):
         query = f"""SELECT * WHERE column1 IN (SELECT column2 FROM t2)"""
         assert str(parse_sql(query)) == query
+        assert str(parse_sql(query)) == str(Select(targets=[Star()],
+                                                   where=InOperation(args_=(
+                                                       Identifier('column1'),
+                                                       Select(targets=[Identifier('column2')],
+                                                              from_table=[Identifier('t2')])
+                                                   ))))
+
+    def test_multiple_selects(self):
+        query = f"""SELECT 1; SELECT 2"""
+        with pytest.raises(SQLParsingException):
+            parse_sql(query)
+
+    def test_unary_operations(self):
+        unary_operations = ['-', 'NOT', ]
+        for op in unary_operations:
+            query = f"""SELECT {op} column1"""
+            assert str(parse_sql(query)) == query
+            assert str(parse_sql(query)) == str(Select(targets=[UnaryOperation(op=op, args_=(Identifier("column1"), ))],))
+
+    def test_binary_operations(self):
+        unary_operations = ['AND', 'OR', '=', '<>',  '-', '+', '*', '/', '%', '^']
+        for op in unary_operations:
+            query = f"""SELECT column1 {op} column2"""
+            assert str(parse_sql(query)) == query
+            assert str(parse_sql(query)) == str(Select(targets=[BinaryOperation(op=op, args_=(Identifier("column1"), Identifier("column2")))],))
+
+    def test_functions(self):
+        functions = ['max', 'min', 'avg', 'sum']
+        for op in functions:
+            query = f"""SELECT {op}(column1)"""
+            assert str(parse_sql(query)) == query
+            assert str(parse_sql(query)) == str(
+                Select(targets=[FunctionCall(op=op, args_=(Identifier("column1"),))]))
