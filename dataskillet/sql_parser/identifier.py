@@ -8,3 +8,4 @@ class Identifier(Statement):
 
     def to_string(self, *args, **kwargs):
         return self.maybe_add_alias(str(self.value))
+
