@@ -15,6 +15,9 @@ OPERATIONS = (
               # Comparison predicates
               'IS TRUE', 'IS FALSE',
               'IS NULL', 'IS NOT NULL',
+
+              # Aggregations
+              'count',
               )
 
 LOOKUP_BOOL_OPERATION = {

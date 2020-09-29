@@ -56,6 +56,15 @@ class TestFileSystemDataSource:
         values_right = query_result.values
         assert (values_left == values_right).all()
 
+    def test_select_all(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        sql = "SELECT * FROM titanic"
+        query_result = data_source.query(sql)
+        assert (query_result.columns == df.columns).all()
+        values_left = df.values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+
     def test_select_column_alias(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
 
@@ -75,3 +84,75 @@ class TestFileSystemDataSource:
         assert query_result.name == 'survived'
         assert list(query_result.values) == [0, 1]
 
+    def test_select_multiple_columns(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+
+        sql = "SELECT passenger_id, survived FROM titanic"
+
+        query_result = data_source.query(sql)
+
+        assert list(query_result.columns) == ['passenger_id', 'survived']
+
+        values_left = df[['passenger_id', 'survived']].values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_select_const(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        df['const'] = 1
+
+        sql = "SELECT passenger_id, 1 as const FROM titanic"
+
+        query_result = data_source.query(sql)
+
+        assert list(query_result.columns) == ['passenger_id', 'const']
+
+        values_left = df[['passenger_id', 'const']].values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_select_operation(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        df['col_sum'] = df['passenger_id'] + df['survived']
+        df['col_diff'] = df['passenger_id'] - df['survived']
+        sql = "SELECT passenger_id + survived  as col_sum, passenger_id - survived as col_diff FROM titanic"
+        query_result = data_source.query(sql)
+        assert list(query_result.columns) == ['col_sum', 'col_diff']
+        values_left = df[['col_sum', 'col_diff']].values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_select_where(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        out_df = df[df['survived'] == 1][['passenger_id', 'survived']]
+        sql = "SELECT passenger_id, survived FROM titanic WHERE survived = 1"
+        query_result = data_source.query(sql)
+        assert list(query_result.columns) == ['passenger_id', 'survived']
+        values_left = out_df[['passenger_id', 'survived']].values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+        assert (values_left == values_right).all()
+
+    def test_select_groupby(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        out_df = df.groupby(['survived', 'p_class']).agg({'passenger_id': 'count'}).reset_index()
+        print(out_df)
+        sql = "SELECT survived, p_class, count(passenger_id) as passenger_id FROM titanic GROUP BY survived, p_class"
+        query_result = data_source.query(sql)
+        assert list(query_result.columns) == list(out_df.columns)
+        values_left = out_df.values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+        assert (values_left == values_right).all().all()
+
+    # def test_select_aggregation_function(self, csv_file, data_source):
+    #     df = pd.read_csv(csv_file)
+    #     df['col_sum'] = df['passenger_id'].sum()
+    #     df['col_avg'] = df['passenger_id'].mean()
+    #     sql = "SELECT sum(passenger_id) as col_sum, avg(passenger_id) as col_avg FROM titanic"
+    #     query_result = data_source.query(sql)
+    #     assert list(query_result.columns) == ['col_sum', 'col_avg']
+    #     values_left = df[['col_sum', 'col_avg']].values
+    #     values_right = query_result.values
+    #     assert (values_left == values_right).all().all()
+    #
