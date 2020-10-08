@@ -1,5 +1,5 @@
 import pytest
-from dataskillet.sql_parser import (parse_sql, Select, Constant, Star, Identifier, BinaryOperation, FunctionCall,
+from dataskillet.sql_parser import (parse_sql, Select, Constant, Star, Identifier, BinaryOperation, Function,
                                     OrderBy, Join, InOperation, SQLParsingException, UnaryOperation, ComparisonPredicate)
 
 
@@ -56,7 +56,7 @@ class TestParseSelect:
 
         assert str(parse_sql(query)) == str(Select(targets=[Identifier("column1"),
                                                             Identifier("column2"),
-                                                            FunctionCall(op="sum",
+                                                            Function(op="sum",
                                                                          args_=(Identifier("column3"),),
                                                                          alias='total')],
                                                    from_table=[Identifier('t1')],
@@ -201,4 +201,4 @@ class TestParseSelect:
             query = f"""SELECT {op}(column1)"""
             assert str(parse_sql(query)) == query
             assert str(parse_sql(query)) == str(
-                Select(targets=[FunctionCall(op=op, args_=(Identifier("column1"),))]))
+                Select(targets=[Function(op=op, args_=(Identifier("column1"),))]))

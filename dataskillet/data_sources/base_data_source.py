@@ -1,6 +1,6 @@
 import modin.pandas as pd
-from dataskillet.sql_parser import parse_sql
-from dataskillet.sql_parser import (Select, Identifier, Constant, Operation, Star, FunctionCall)
+import numpy as np
+from dataskillet.sql_parser import (parse_sql, Select, Identifier, Constant, Operation, Star, Function, AggregateFunction)
 
 
 def get_modin_operation(sql_op):
@@ -9,6 +9,9 @@ def get_modin_operation(sql_op):
         '-': lambda args: args[0] - args[1],
         '=': lambda args: args[0] == args[1],
         '!=': lambda args: args[0] != args[1],
+        'avg': 'mean',
+        'sum': 'sum',
+        'count': 'count'
     }
 
     op = operations.get(sql_op)
@@ -83,15 +86,67 @@ class DataSource:
         out_df = pd.DataFrame(out_dict)
         return out_df
 
-    def execute_select_groupby_targets(self, targets, source_df):
+    def execute_select_groupby_targets(self, targets, source_df, group_by):
+        funcs_to_alias = {}
+
+        out_column_names = []
+        out_columns = []
+
         agg = {}
+
+        group_by_cols = [q.value for q in group_by if q.value != True]
         for target in targets:
-            if isinstance(target, FunctionCall):
+            col_df_name = target.alias
+            col_name = target.alias
+            if isinstance(target, Identifier):
+                col_df_name = target.value
+                col_name = target.alias if target.alias else target.value
+
+            elif not target.alias:
+                raise (Exception(f'Alias required for {target}'))
+
+            if isinstance(target, Function):
                 arg = target.args[0]
                 assert isinstance(arg, Identifier)
                 arg = arg.value
-                agg[arg] = target.op
-        return source_df.agg(agg).reset_index()
+                modin_op = get_modin_operation(target.op)
+                if agg.get(arg):
+                    agg[arg].append(modin_op)
+                else:
+                    agg[arg] = [modin_op]
+
+                funcs_to_alias[(arg, modin_op)] = col_name
+
+            else:
+                if col_name not in group_by_cols and col_df_name not in group_by_cols:
+                    raise Exception(f'Column {col_df_name}({col_name}) not found in GROUP BY clause')
+
+        aggregate_result = source_df.agg(agg)
+        for col_index in aggregate_result.reset_index().columns:
+            if isinstance(col_index, tuple):
+                col_name = col_index[0]
+            else:
+                col_name = col_index
+            if col_name in agg or col_name == 'index':
+                continue
+
+            out_column_names.append(col_name)
+            out_columns.append(aggregate_result.reset_index()[col_name].values)
+
+        for col_name in agg:
+            for func in agg[col_name]:
+                alias = funcs_to_alias[(col_name, func)]
+                agg_result = aggregate_result[col_name][func]
+                try:
+                    agg_result = agg_result.values
+                except AttributeError:
+                    agg_result = np.array([agg_result])
+                out_columns.append(agg_result)
+                out_column_names.append(alias)
+
+        out_dict = {col: values for col, values in zip(out_column_names, out_columns)}
+        out_df = pd.DataFrame(out_dict)
+        return out_df
 
     def execute_select(self, query):
         from_table = [self.execute_from_query(sub_q) for sub_q in query.from_table]
@@ -106,6 +161,22 @@ class DataSource:
             source_df = source_df[index]
 
         group_by = False
+
+        if query.group_by is None:
+            # Check for implicit group by
+            non_agg_functions = []
+            agg_functions = []
+            for target in query.targets:
+                if isinstance(target, AggregateFunction):
+                    agg_functions.append(target)
+                else:
+                    non_agg_functions.append(target)
+
+            if not non_agg_functions and agg_functions:
+                query.group_by = [Constant(True)]
+            elif non_agg_functions and agg_functions:
+                raise(Exception(f'Can\'t process a mix of aggregation functions and non-aggregation functions with no GROUP BY clause.'))
+
         if query.group_by:
             group_by = True
             source_df = self.execute_groupby_queries(query.group_by, source_df)
@@ -113,7 +184,7 @@ class DataSource:
         if group_by == False:
             out_df = self.execute_select_targets(query.targets, source_df)
         else:
-            out_df = self.execute_select_groupby_targets(query.targets, source_df)
+            out_df = self.execute_select_groupby_targets(query.targets, source_df, query.group_by)
 
         if query.distinct:
             out_df = out_df.drop_duplicates()
@@ -132,6 +203,10 @@ class DataSource:
 
     def execute_groupby_queries(self, queries, df):
         col_names = []
+
+        if len(queries) == 1 and isinstance(queries[0], Constant) and queries[0].value == True:
+            return df
+
         for query in queries:
             if isinstance(query, Identifier):
                 col_names.append(self.execute_groupby_identifier(query, df))

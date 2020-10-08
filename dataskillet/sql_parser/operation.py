@@ -1,6 +1,10 @@
 from dataskillet.sql_parser.base import Statement
 from dataskillet.sql_parser.exceptions import SQLParsingException
 
+AGGREGATE_FUNCTIONS = (
+    'sum', 'count', 'avg',
+)
+
 OPERATIONS = (
               # Math operators
               '=', '<>', '!=', '<', '>', '>=', '<=',
@@ -17,7 +21,7 @@ OPERATIONS = (
               'IS NULL', 'IS NOT NULL',
 
               # Aggregations
-              'count',
+              *AGGREGATE_FUNCTIONS
               )
 
 LOOKUP_BOOL_OPERATION = {
@@ -79,10 +83,14 @@ class ComparisonPredicate(UnaryOperation):
         return self.maybe_add_alias(f'{self.args[0].to_string()} {self.op}')
 
 
-class FunctionCall(Operation):
+class Function(Operation):
     def to_string(self, *args, **kwargs):
         args_str = ', '.join([arg.to_string() for arg in self.args])
         return self.maybe_add_alias(f'{self.op}({args_str})')
+
+
+class AggregateFunction(Function):
+    pass
 
 
 class InOperation(BinaryOperation):

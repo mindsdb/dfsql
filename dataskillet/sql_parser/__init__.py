@@ -2,7 +2,7 @@ from dataskillet.sql_parser.select import Select
 from dataskillet.sql_parser.constant import Constant
 from dataskillet.sql_parser.expression import Expression, Star
 from dataskillet.sql_parser.identifier import Identifier
-from dataskillet.sql_parser.operation import Operation, BinaryOperation, FunctionCall, LOOKUP_BOOL_OPERATION, \
+from dataskillet.sql_parser.operation import Operation, BinaryOperation, Function, AggregateFunction, AGGREGATE_FUNCTIONS, LOOKUP_BOOL_OPERATION, \
     InOperation, UnaryOperation, operation_factory, LOOKUP_NULL_TEST, ComparisonPredicate, LOOKUP_BOOL_TEST
 from dataskillet.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
 from dataskillet.sql_parser.join import Join, LOOKUP_JOIN_TYPE
@@ -62,8 +62,11 @@ def parse_rangevar(stmt):
 
 def parse_func_call(stmt):
     op = stmt['funcname'][0]['String']['str']
+    class_ = Function
+    if op in AGGREGATE_FUNCTIONS:
+        class_ = AggregateFunction
     args = [parse_statement(arg) for arg in stmt['args']]
-    return FunctionCall(op=op,
+    return class_(op=op,
                         args_=args,
                         raw=stmt)
 

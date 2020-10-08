@@ -133,26 +133,19 @@ class TestFileSystemDataSource:
         assert values_left.shape == values_right.shape
         assert (values_left == values_right).all()
 
-    def test_select_groupby(self, csv_file, data_source):
+    def test_select_groupby_wrong_column(self, csv_file, data_source):
+        sql = "SELECT survived, p_class, count(passenger_id) as count_passenger_id FROM titanic GROUP BY survived"
+        with pytest.raises(Exception):
+            query_result = data_source.query(sql)
+            print(query_result)
+
+    def test_select_aggregation_function_no_groupby(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
-        out_df = df.groupby(['survived', 'p_class']).agg({'passenger_id': 'count'}).reset_index()
-        print(out_df)
-        sql = "SELECT survived, p_class, count(passenger_id) as passenger_id FROM titanic GROUP BY survived, p_class"
+        df = pd.DataFrame({'col_sum': [df['passenger_id'].sum()], 'col_avg': [df['passenger_id'].mean()]})
+        sql = "SELECT sum(passenger_id) as col_sum, avg(passenger_id) as col_avg FROM titanic"
         query_result = data_source.query(sql)
-        assert list(query_result.columns) == list(out_df.columns)
-        values_left = out_df.values
+        assert list(query_result.columns) == ['col_sum', 'col_avg']
+        values_left = df[['col_sum', 'col_avg']].values
         values_right = query_result.values
-        assert values_left.shape == values_right.shape
         assert (values_left == values_right).all().all()
 
-    # def test_select_aggregation_function(self, csv_file, data_source):
-    #     df = pd.read_csv(csv_file)
-    #     df['col_sum'] = df['passenger_id'].sum()
-    #     df['col_avg'] = df['passenger_id'].mean()
-    #     sql = "SELECT sum(passenger_id) as col_sum, avg(passenger_id) as col_avg FROM titanic"
-    #     query_result = data_source.query(sql)
-    #     assert list(query_result.columns) == ['col_sum', 'col_avg']
-    #     values_left = df[['col_sum', 'col_avg']].values
-    #     values_right = query_result.values
-    #     assert (values_left == values_right).all().all()
-    #
