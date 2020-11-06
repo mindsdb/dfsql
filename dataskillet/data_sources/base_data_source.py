@@ -1,6 +1,7 @@
 import modin.pandas as pd
 import numpy as np
-from dataskillet.sql_parser import (parse_sql, Select, Identifier, Constant, Operation, Star, Function, AggregateFunction)
+from dataskillet.sql_parser import (parse_sql, Select, Identifier, Constant, Operation, Star, Function,
+                                    AggregateFunction, Join, BinaryOperation)
 
 
 def get_modin_operation(sql_op):
@@ -196,9 +197,59 @@ class DataSource:
 
         return out_df
 
+    def execute_join(self, query):
+        join_type = query.join_type
+        join_type = {'INNER JOIN': 'inner', 'LEFT JOIN': 'left', 'RIGHT JOIN': 'right', 'FULL JOIN': 'outer'}[join_type]
+
+        left = query.left
+        if isinstance(left, Identifier):
+            left = self.execute_from_identifier(left)
+        else:
+            left = self.execute_query(left)
+
+        right = query.right
+        if isinstance(right, Identifier):
+            right = self.execute_from_identifier(right)
+        else:
+            right = self.execute_query(right)
+
+        condition = query.condition
+        if isinstance(condition, BinaryOperation):
+            left_on = condition.args[0]
+            right_on = condition.args[1]
+        else:
+            raise Exception(f'Invalid join condition {condition.op}')
+        left_name = query.left.alias if query.left.alias else query.left.value
+        right_name = query.right.alias if query.right.alias else query.right.value
+        left_on, right_on = left_on if left_on.value.split('.')[0] in left_name else right_on, \
+                            right_on if right_on.value.split('.')[0] in right_name else left_on
+
+        left_on = left_on.value.split('.')[-1]
+        right_on = right_on.value.split('.')[-1]
+        out_df = pd.merge(left, right, how=join_type, left_on=[left_on], right_on=[right_on], suffixes=('_x', '_y'))
+        out_df = out_df.drop(columns=[f'{left_on}_y', f'{right_on}_x'])
+
+        renaming = {f'{left_on}_x': left_on, f'{right_on}_y': right_on}
+
+        for col in out_df.columns:
+            if col in renaming:
+                continue
+
+            if '_x' in col:
+                pure_col_name = col.replace('_x', '')
+                renaming[col] = f'{left_name}.{pure_col_name}'
+            elif '_y' in col:
+                pure_col_name = col.replace('_y', '')
+                renaming[col] = f'{right_name}.{pure_col_name}'
+
+        out_df = out_df.rename(renaming, axis=1)
+        return out_df
+
     def execute_from_query(self, query):
         if isinstance(query, Identifier):
             return self.execute_from_identifier(query)
+        if isinstance(query, Join):
+            return self.execute_join(query)
         return self.execute_query(query)
 
     def execute_groupby_queries(self, queries, df):

@@ -23,6 +23,24 @@ def csv_file(tmpdir):
     p.write_text(content, encoding='utf-8')
     return p
 
+@pytest.fixture()
+def join_dummy_file(tmpdir):
+    # Titanic dataset first 10 lines of train
+    p = tmpdir.join('join_dummy.csv')
+    content = """c1,c2,c3
+0,A,1
+0,A,2
+0,B,1
+0,C,1
+0,B,2
+1,A,1
+1,A,2
+1,B,2
+1,C,2
+    """
+    p.write_text(content, encoding='utf-8')
+    return p
+
 
 @pytest.fixture()
 def data_source(csv_file):
@@ -137,7 +155,6 @@ class TestFileSystemDataSource:
         sql = "SELECT survived, p_class, count(passenger_id) as count_passenger_id FROM titanic GROUP BY survived"
         with pytest.raises(Exception):
             query_result = data_source.query(sql)
-            print(query_result)
 
     def test_select_aggregation_function_no_groupby(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
@@ -148,4 +165,70 @@ class TestFileSystemDataSource:
         values_left = df[['col_sum', 'col_avg']].values
         values_right = query_result.values
         assert (values_left == values_right).all().all()
+
+    def test_inner_join(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        merge_df = pd.merge(df, df, how='inner', left_on=['passenger_id'], right_on=['p_class'])[['passenger_id_x', 'p_class_y']]
+        merge_df.columns = ['passenger_id', 'p_class']
+        sqls = ["SELECT passenger_id, p_class FROM titanic as t1 INNER JOIN titanic as t2 ON t1.passenger_id = t2.p_class",
+                "SELECT passenger_id, p_class FROM titanic as t1 INNER JOIN titanic as t2 ON t2.p_class = t1.passenger_id"]
+        for sql in sqls:
+            query_result = data_source.query(sql)
+            assert list(query_result.columns) == ['passenger_id', 'p_class']
+            values_left = merge_df[['passenger_id', 'p_class']].values
+            values_right = query_result.values
+            assert (values_left == values_right).all().all()
+
+    def test_inner_join_col_access(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        merge_df = pd.merge(df, df, how='inner', left_on=['passenger_id'], right_on=['p_class'])[['passenger_id_x', 'p_class_y', 'sex_x']]
+        merge_df.columns = ['passenger_id', 'p_class', 't1.sex']
+        sql = "SELECT passenger_id, p_class, t1.sex FROM titanic as t1 INNER JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        query_result = data_source.query(sql)
+        assert list(query_result.columns) == ['passenger_id', 'p_class', 't1.sex']
+        values_left = merge_df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+        sql = "SELECT passenger_id, p_class, t1.sex as sex FROM titanic as t1 INNER JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        query_result = data_source.query(sql)
+        assert list(query_result.columns) == ['passenger_id', 'p_class', 'sex']
+        values_left = merge_df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_left_right_outer_joins(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        merge_df = pd.merge(df, df, how='left', left_on=['passenger_id'], right_on=['p_class'])[['passenger_id_x', 'p_class_y']]
+        merge_df.columns = ['passenger_id', 'p_class']
+        sql = "SELECT passenger_id, p_class FROM titanic as t1 LEFT JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        query_result = data_source.query(sql)
+        assert merge_df.shape == query_result.shape
+        assert list(query_result.columns) == ['passenger_id', 'p_class']
+        values_left = merge_df.dropna().values
+        values_right = query_result.dropna().values
+        assert (values_left == values_right).all().all()
+
+        merge_df = pd.merge(df, df, how='right', left_on=['passenger_id'], right_on=['p_class'])[
+            ['passenger_id_x', 'p_class_y']]
+        merge_df.columns = ['passenger_id', 'p_class']
+        sql = "SELECT passenger_id, p_class FROM titanic as t1 RIGHT JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        query_result = data_source.query(sql)
+        assert merge_df.shape == query_result.shape
+        assert list(query_result.columns) == ['passenger_id', 'p_class']
+        values_left = merge_df.dropna().values
+        values_right = query_result.dropna().values
+        assert (values_left == values_right).all().all()
+
+        merge_df = pd.merge(df, df, how='outer', left_on=['passenger_id'], right_on=['p_class'])[
+            ['passenger_id_x', 'p_class_y']]
+        merge_df.columns = ['passenger_id', 'p_class']
+        sql = "SELECT passenger_id, p_class FROM titanic as t1 FULL JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        query_result = data_source.query(sql)
+        assert merge_df.shape == query_result.shape
+        assert list(query_result.columns) == ['passenger_id', 'p_class']
+        values_left = merge_df.dropna().values
+        values_right = query_result.dropna().values
+        assert (values_left == values_right).all().all()
+
 
