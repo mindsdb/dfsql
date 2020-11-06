@@ -23,24 +23,6 @@ def csv_file(tmpdir):
     p.write_text(content, encoding='utf-8')
     return p
 
-@pytest.fixture()
-def join_dummy_file(tmpdir):
-    # Titanic dataset first 10 lines of train
-    p = tmpdir.join('join_dummy.csv')
-    content = """c1,c2,c3
-0,A,1
-0,A,2
-0,B,1
-0,C,1
-0,B,2
-1,A,1
-1,A,2
-1,B,2
-1,C,2
-    """
-    p.write_text(content, encoding='utf-8')
-    return p
-
 
 @pytest.fixture()
 def data_source(csv_file):
@@ -178,6 +160,35 @@ class TestFileSystemDataSource:
             values_left = merge_df[['passenger_id', 'p_class']].values
             values_right = query_result.values
             assert (values_left == values_right).all().all()
+
+    def test_inner_join_no_aliases(self, csv_file, tmpdir):
+        p = tmpdir.join('titanic2.csv')
+        content = """passenger_id,survived,p_class,name,sex,age,sib_sp,parch,ticket,fare,cabin,embarked
+        1,0,3,"Braund, Mr. Owen Harris",male,22,1,0,A/5 21171,7.25,,S
+        2,1,1,"Cumings, Mrs. John Bradley (Florence Briggs Thayer)",female,38,1,0,PC 17599,71.2833,C85,C
+        3,1,3,"Heikkinen, Miss. Laina",female,26,0,0,STON/O2. 3101282,7.925,,S
+        4,1,1,"Futrelle, Mrs. Jacques Heath (Lily May Peel)",female,35,1,0,113803,53.1,C123,S
+        5,0,3,"Allen, Mr. William Henry",male,35,0,0,373450,8.05,,S
+        6,0,3,"Moran, Mr. James",male,,0,0,330877,8.4583,,Q
+        7,0,1,"McCarthy, Mr. Timothy J",male,54,0,0,17463,51.8625,E46,S
+        8,0,3,"Palsson, Master. Gosta Leonard",male,2,3,1,349909,21.075,,S
+        9,1,3,"Johnson, Mrs. Oscar W (Elisabeth Vilhelmina Berg)",female,27,0,2,347742,11.1333,,S
+            """
+        p.write_text(content, encoding='utf-8')
+
+        dir_path = csv_file.dirpath()
+        data_source = FileSystemDataSource.from_dir(dir_path)
+        assert len(data_source.tables) == 2
+
+        df = pd.read_csv(csv_file)
+        merge_df = pd.merge(df, df, how='inner', left_on=['passenger_id'], right_on=['p_class'])[['passenger_id_x', 'p_class_y']]
+        merge_df.columns = ['passenger_id', 'p_class']
+        sql = "SELECT passenger_id, p_class FROM titanic INNER JOIN titanic2 ON titanic.passenger_id = titanic2.p_class"
+        query_result = data_source.query(sql)
+        assert list(query_result.columns) == ['passenger_id', 'p_class']
+        values_left = merge_df[['passenger_id', 'p_class']].values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
 
     def test_inner_join_col_access(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
