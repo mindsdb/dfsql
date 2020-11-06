@@ -82,7 +82,6 @@ class DataSource:
                     raise (Exception(f'Alias required for {target}'))
                 out_column_names.append(target.alias)
             out_columns.append(self.execute_select_target(target, source_df))
-
         out_dict = {col: values for col, values in zip(out_column_names, out_columns)}
         out_df = pd.DataFrame(out_dict)
         return out_df
@@ -184,8 +183,23 @@ class DataSource:
         else:
             out_df = self.execute_select_groupby_targets(query.targets, source_df, query.group_by)
 
+        if query.having:
+            if group_by == False:
+                raise Exception('Can\'t execute HAVING clause with no GROUP BY clause.')
+            index = self.execute_operation(query.having, out_df)
+            out_df = out_df[index]
+
         if query.distinct:
             out_df = out_df.drop_duplicates()
+
+        if query.offset:
+            offset = self.execute_query(query.offset)
+            out_df = out_df.iloc[offset:, :]
+
+        if query.limit:
+            limit = self.execute_query(query.limit)
+            out_df = out_df.iloc[:limit, :]
+
         if out_df.shape == (1, 1): # Just one value returned
             return out_df.values[0][0]
         elif out_df.shape[1] == 1: # Just one column, return series

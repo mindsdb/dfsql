@@ -84,6 +84,17 @@ class TestFileSystemDataSource:
         assert query_result.name == 'survived'
         assert list(query_result.values) == [0, 1]
 
+    def test_select_limit_offset(self, csv_file, data_source):
+        sql = "SELECT passenger_id FROM titanic LIMIT 2 OFFSET 2"
+        query_result = data_source.query(sql)
+
+        df = pd.read_csv(csv_file)['passenger_id']
+        df = df.iloc[2:, :]
+        df = df.iloc[:2, :]
+
+        assert query_result.shape == df.shape
+        assert (df.values == query_result.values).all().all()
+
     def test_select_multiple_columns(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
 
@@ -145,6 +156,23 @@ class TestFileSystemDataSource:
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['col_sum', 'col_avg']
         values_left = df[['col_sum', 'col_avg']].values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_groupby(self, csv_file, data_source):
+        sql = "SELECT survived, p_class, count(passenger_id) as count_passenger_id FROM titanic GROUP BY survived, p_class HAVING survived = 1"
+        query_result = data_source.query(sql)
+
+        df = pd.read_csv(csv_file)
+        df = df.groupby(['survived', 'p_class']).agg({'passenger_id': 'count'}).reset_index()
+        df.columns = ['survived', 'p_class', 'count_passenger_id']
+        df = df[df['survived'] == 1]
+
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+
+        assert (query_result.survived == 1).all()
+        values_left = df.values
         values_right = query_result.values
         assert (values_left == values_right).all().all()
 
@@ -277,3 +305,8 @@ class TestFileSystemDataSource:
         values_left = df.dropna().values
         values_right = query_result.dropna().values
         assert (values_left == values_right).all()
+
+    def test_subquery_select(self, csv_file, data_source):
+        sql = "SELECT survived, (SELECT passenger_id FROM titanic LIMIT 1) as pid FROM titanic"
+        query_result = data_source.query(sql)
+        assert (query_result['pid'] == 1).all()
