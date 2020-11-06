@@ -242,4 +242,38 @@ class TestFileSystemDataSource:
         values_right = query_result.dropna().values
         assert (values_left == values_right).all().all()
 
+    def test_subquery_simple(self, csv_file, data_source):
+        sql = "SELECT * FROM (SELECT * FROM titanic) as t1"
+        query_result = data_source.query(sql)
+        df = pd.read_csv(csv_file)
 
+        assert query_result.shape == df.shape
+        values_left = df.dropna().values
+        values_right = query_result.dropna().values
+        assert (values_left == values_right).all()
+
+    def test_subquery_groupby(self, csv_file, data_source):
+        sql = "SELECT survived, p_class, count(passenger_id) as count FROM (SELECT * FROM titanic WHERE survived = 1) as t1 GROUP BY survived, p_class"
+        query_result = data_source.query(sql)
+
+        df = pd.read_csv(csv_file)
+        df = df[df.survived == 1]
+        df = df.groupby(['survived', 'p_class']).agg({'passenger_id': 'count'}).reset_index()
+
+        assert query_result.shape == df.shape
+        values_left = df.dropna().values
+        values_right = query_result.dropna().values
+        assert (values_left == values_right).all()
+
+    def test_subquery_where(self, csv_file, data_source):
+        sql = "SELECT survived, p_class, passenger_id FROM titanic WHERE passenger_id IN (SELECT passenger_id FROM titanic WHERE survived = 1)"
+        query_result = data_source.query(sql)
+
+        df = pd.read_csv(csv_file)
+        df = df[df.survived == 1]
+        df = df[['survived', 'p_class', 'passenger_id']]
+
+        assert query_result.shape == df.shape
+        values_left = df.dropna().values
+        values_right = query_result.dropna().values
+        assert (values_left == values_right).all()

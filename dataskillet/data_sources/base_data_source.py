@@ -12,10 +12,10 @@ def get_modin_operation(sql_op):
         '!=': lambda args: args[0] != args[1],
         'avg': 'mean',
         'sum': 'sum',
-        'count': 'count'
+        'count': 'count',
+        'in': lambda args: args[0].isin(list(args[1])) if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] in args[1]
     }
-
-    op = operations.get(sql_op)
+    op = operations.get(sql_op.lower())
     if not op:
         raise(Exception(f'Unsupported operation: {sql_op}'))
     return op
@@ -156,11 +156,9 @@ class DataSource:
             raise(Exception(f'No idea how to deal with from_table len {len(from_table)}'))
 
         source_df = from_table[0]
-
         if query.where:
             index = self.execute_operation(query.where, source_df)
             source_df = source_df[index]
-
         group_by = False
 
         if query.group_by is None:
@@ -177,7 +175,6 @@ class DataSource:
                 query.group_by = [Constant(True)]
             elif non_agg_functions and agg_functions:
                 raise(Exception(f'Can\'t process a mix of aggregation functions and non-aggregation functions with no GROUP BY clause.'))
-
         if query.group_by:
             group_by = True
             source_df = self.execute_groupby_queries(query.group_by, source_df)
@@ -189,12 +186,10 @@ class DataSource:
 
         if query.distinct:
             out_df = out_df.drop_duplicates()
-
         if out_df.shape == (1, 1): # Just one value returned
             return out_df.values[0][0]
         elif out_df.shape[1] == 1: # Just one column, return series
-            return out_df[out_df.columns[0]]
-
+            return out_df.iloc[:, 0]
         return out_df
 
     def execute_join(self, query):
