@@ -48,8 +48,44 @@ class TestFileSystemDataSource:
         assert table.name == csv_file.purebasename
         assert pd.read_csv(csv_file).shape == table.df.shape
 
-    def test_add_file_preprocessing(self, csv_file):
-        pass
+    def test_file_preprocessing(self, csv_file):
+        source_df = pd.read_csv(str(csv_file))
+        df = source_df.copy()
+        df = df.append([None]) # Empty row
+        df['empty_column'] = None # Empty column
+        df = df.append(df.iloc[0]) # Duplicate row
+        df = df[source_df.columns]
+        df = df.rename(columns={'ticket': 'Ticket Number '}) # Bad column names
+        df.to_csv(csv_file, index=None)
+
+        ds = FileSystemDataSource()
+        assert not ds.tables and len(ds.tables) == 0
+
+        # No preprocessing changes nothing
+        ds.add_table_from_file(str(csv_file), preprocess=False)
+        assert ds.tables['titanic'].df.shape == df.shape
+        assert (ds.tables['titanic'].df.dropna().values == df.dropna().values).all().all()
+
+        ds.drop_table('titanic')
+        assert not ds.tables
+        # Preprocessing applied
+        ds.add_table_from_file(str(csv_file), preprocess=True)
+        # Empty rows removed
+        # Duplicate rows removed
+        # Empty columns removed
+        # Columns renamed
+        new_df = ds.tables['titanic'].df
+        empty_rows = pd.isnull(new_df).all(axis=1)
+        assert not empty_rows.any()
+        empty_columns = pd.isnull(new_df).all(axis=0)
+        assert not empty_columns.any()
+        print(new_df)
+        assert len(new_df) == len(source_df) # Duplicate dropped
+        assert new_df.columns[8] == 'ticket_number'
+
+        assert (new_df.dropna().values == source_df.dropna().values).all().all()
+
+
 
     def test_create_table(self, csv_file):
         ds = FileSystemDataSource()

@@ -4,11 +4,6 @@ from dataskillet.data_sources.base_data_source import DataSource
 from dataskillet.table import Table
 
 
-def preprocess_dataframe(df):
-    df.columns = [col.lower() for col in df.columns]
-    return df
-
-
 class FileSystemDataSource(DataSource):
     def __init__(self, tables=None):
         super().__init__(tables)
@@ -20,11 +15,8 @@ class FileSystemDataSource(DataSource):
         fpath = os.path.join(path)
         df = pd.read_csv(fpath)
 
-        if preprocess:
-            df = preprocess_dataframe(df)
-
         fname = '.'.join(os.path.basename(fpath).split('.')[:-1])
-        table = Table(name=fname, df=df)
+        table = Table.from_dataframe(name=fname, df=df, preprocess=preprocess)
         self.add_table(table)
 
     def preprocess_dataframe(self, df):
