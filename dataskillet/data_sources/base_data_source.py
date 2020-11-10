@@ -28,6 +28,11 @@ class DataSource:
     def __contains__(self, table_name):
         return table_name in self.tables
 
+    def add_table(self, table):
+        if self.tables.get(table.name):
+            raise Exception(f'Table {table.name} already exists in data source, use DROP TABLE to remove it if you want to recreate it.')
+        self.tables[table.name] = table
+
     def query(self, sql):
         query = parse_sql(sql)
 

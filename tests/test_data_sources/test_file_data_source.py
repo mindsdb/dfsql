@@ -310,3 +310,5 @@ class TestFileSystemDataSource:
         sql = "SELECT survived, (SELECT passenger_id FROM titanic LIMIT 1) as pid FROM titanic"
         query_result = data_source.query(sql)
         assert (query_result['pid'] == 1).all()
+    
+    
