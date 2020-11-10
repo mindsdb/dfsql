@@ -1,6 +1,6 @@
 import modin.pandas as pd
 import numpy as np
-from dataskillet.sql_parser import (parse_sql, Select, Identifier, Constant, Operation, Star, Function,
+from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star, Function,
                                     AggregateFunction, Join, BinaryOperation)
 
 
@@ -22,8 +22,8 @@ def get_modin_operation(sql_op):
 
 
 class DataSource:
-    def __init__(self, tables):
-        self.tables = {t.name.lower(): t for t in tables}
+    def __init__(self, tables=None):
+        self.tables = {t.name.lower(): t for t in tables} if tables else {}
 
     def __contains__(self, table_name):
         return table_name in self.tables
@@ -33,9 +33,18 @@ class DataSource:
             raise Exception(f'Table {table.name} already exists in data source, use DROP TABLE to remove it if you want to recreate it.')
         self.tables[table.name] = table
 
-    def query(self, sql):
-        query = parse_sql(sql)
+    def drop_table(self, name):
+        del self.tables[name]
 
+    def execute_command(self, command):
+        return command.execute(self)
+
+    def query(self, sql):
+        command = try_parse_command(sql)
+        if command:
+            return self.execute_command(command)
+
+        query = parse_sql(sql)
         return self.execute_query(query)
 
     def execute_from_identifier(self, query):

@@ -10,9 +10,8 @@ def preprocess_dataframe(df):
 
 
 class FileSystemDataSource(DataSource):
-    def __init__(self, tables, root_path):
+    def __init__(self, tables=None):
         super().__init__(tables)
-        self.root_path = root_path
 
     def add_table_from_url(self, path):
         pass
@@ -35,7 +34,7 @@ class FileSystemDataSource(DataSource):
     @staticmethod
     def from_dir(root_path):
         files = os.listdir(root_path)
-        ds = FileSystemDataSource(tables={}, root_path=root_path)
+        ds = FileSystemDataSource(tables={})
         for f in files:
             if f.endswith('.csv'):
                 fpath = os.path.join(root_path, f)

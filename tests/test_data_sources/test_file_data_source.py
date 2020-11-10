@@ -35,13 +35,46 @@ class TestFileSystemDataSource:
     def test_created_from_dir(self, csv_file):
         dir_path = csv_file.dirpath()
         ds = FileSystemDataSource.from_dir(dir_path)
-
         assert ds.tables and len(ds.tables) == 1
-
         table = ds.tables['titanic']
         assert table.name == csv_file.purebasename
-
         assert pd.read_csv(csv_file).shape == table.df.shape
+
+    def test_add_from_file(self, csv_file):
+        ds = FileSystemDataSource()
+        assert not ds.tables and len(ds.tables) == 0
+        ds.add_table_from_file(str(csv_file))
+        table = ds.tables['titanic']
+        assert table.name == csv_file.purebasename
+        assert pd.read_csv(csv_file).shape == table.df.shape
+
+    def test_add_file_preprocessing(self, csv_file):
+        pass
+
+    def test_create_table(self, csv_file):
+        ds = FileSystemDataSource()
+        assert not ds.tables and len(ds.tables) == 0
+        sql = f"CREATE TABLE ('{str(csv_file)}', True)"
+        query_result = ds.query(sql)
+        assert query_result == 'OK'
+        assert ds.tables and len(ds.tables) == 1
+        table = ds.tables['titanic']
+        assert table.name == csv_file.purebasename
+        assert pd.read_csv(csv_file).shape == table.df.shape
+
+    def test_create_table_error_on_recreate(self, csv_file, data_source):
+        assert data_source.tables['titanic']
+
+        sql = f"CREATE TABLE ('{str(csv_file)}', True)"
+        with pytest.raises(Exception):
+            query_result = data_source.query(sql)
+
+    def test_drop_table(self, data_source):
+        assert data_source.tables['titanic']
+        sql = f"DROP TABLE titanic"
+        query_result = data_source.query(sql)
+        assert query_result == 'OK'
+        assert not data_source.tables and len(data_source.tables) == 0
 
     def test_select_column(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
@@ -310,5 +343,4 @@ class TestFileSystemDataSource:
         sql = "SELECT survived, (SELECT passenger_id FROM titanic LIMIT 1) as pid FROM titanic"
         query_result = data_source.query(sql)
         assert (query_result['pid'] == 1).all()
-    
     

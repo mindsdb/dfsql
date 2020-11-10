@@ -7,6 +7,7 @@ from dataskillet.sql_parser.operation import Operation, BinaryOperation, Functio
 from dataskillet.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
 from dataskillet.sql_parser.join import Join, LOOKUP_JOIN_TYPE
 from dataskillet.sql_parser.exceptions import SQLParsingException
+from dataskillet.commands import command_types
 
 
 import pglast
@@ -247,3 +248,11 @@ def parse_sql(sql_query):
 
     out_tree = parse_select_statement(select_statement)
     return out_tree
+
+
+def try_parse_command(sql_query):
+    for command_type in command_types:
+        command = command_type.from_string(sql_query)
+
+        if command:
+            return command
