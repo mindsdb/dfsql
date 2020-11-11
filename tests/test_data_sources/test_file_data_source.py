@@ -1,9 +1,7 @@
 import pytest
 from dataskillet.data_sources import FileSystemDataSource
-from pandas.testing import assert_frame_equal
 import modin.pandas as pd
-import pandas
-
+import numpy as np
 
 @pytest.fixture()
 def csv_file(tmpdir):
@@ -375,4 +373,12 @@ class TestFileSystemDataSource:
         sql = "SELECT survived, (SELECT passenger_id FROM titanic LIMIT 1) as pid FROM titanic"
         query_result = data_source.query(sql)
         assert (query_result['pid'] == 1).all()
-    
+
+    def test_show_tables(self, csv_file, data_source):
+        sql = "SHOW TABLES"
+        query_result = data_source.query(sql)
+        assert (query_result.values == np.array([['titanic', str(csv_file)]])).all()
+
+        data_source.drop_table('titanic')
+        query_result = data_source.query(sql)
+        assert query_result.empty

@@ -1,4 +1,6 @@
+import modin.pandas as pd
 import re
+
 
 class CommandException(Exception):
     pass
@@ -16,9 +18,10 @@ class Command:
         pass
 
     def substitute_defaults(self, args):
-        for i, arg in enumerate(args):
-            if arg is None and self.default_args.get(i):
-                args[i] = self.default_args[i]
+        if args:
+            for i, arg in enumerate(args):
+                if arg is None and self.default_args.get(i):
+                    args[i] = self.default_args[i]
         return args
 
     @classmethod
@@ -95,4 +98,31 @@ class DropTableCommand(Command):
         return 'OK'
 
 
-command_types = [CreateTableCommand, DropTableCommand]
+class ShowTablesCommand(Command):
+    name = 'SHOW TABLES'
+
+    def validate_args(self, args):
+        if args:
+            raise CommandException(f"No arguments expected for command {self.name}")
+
+    @classmethod
+    def from_string(cls, text):
+        if not text.startswith(cls.name):
+            return None
+
+        pattern = r'^SHOW TABLES\s*;?$'
+
+        matches = re.match(pattern, text)
+        if not matches:
+            return None
+        args = None
+        return cls(args)
+
+    def execute(self, data_source):
+        rows = []
+        for tname, table in data_source.tables.items():
+            rows.append((table.name, table.fpath))
+        return pd.DataFrame(rows, columns=['name', 'fpath'])
+
+
+command_types = [CreateTableCommand, DropTableCommand, ShowTablesCommand]
