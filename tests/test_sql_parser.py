@@ -190,7 +190,6 @@ class TestParseSelect:
     def test_unary_comparison_predicates(self):
         ops = ['IS NULL', 'IS NOT NULL', 'IS TRUE', 'IS FALSE']
         for op in ops:
-            print(op)
             query = f"""SELECT column1 {op}"""
             assert str(parse_sql(query)) == query
             assert str(parse_sql(query)) == str(Select(targets=[ComparisonPredicate(op=op, args_=(Identifier("column1"),))],))
