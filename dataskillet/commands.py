@@ -63,8 +63,8 @@ class CreateTableCommand(Command):
 
     def execute(self, data_source):
         fpath = self.args[0]
-        preprocess = self.args[1]
-        data_source.add_table_from_file(fpath, preprocess=preprocess)
+        clean = self.args[1]
+        data_source.add_table_from_file(fpath, clean=clean)
         return 'OK'
 
 

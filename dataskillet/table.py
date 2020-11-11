@@ -1,6 +1,7 @@
 import re
-import pandas as pd
+import modin.pandas as pd
 import numpy as np
+import os
 
 
 def preprocess_column_name(text):
@@ -24,15 +25,48 @@ def preprocess_dataframe(df, rename, empty_rows, drop_columns):
 
 
 class Table:
-    def __init__(self, name, df, preprocessing_dict=None):
+    def __init__(self, name, preprocessing_dict=None):
         self.name = name
-        self.df = df
         self.preprocessing_dict = preprocessing_dict
 
+        self._df_cache = None
+
+    def clear_cache(self):
+        self._df_cache = None
+
+    def fetch_dataframe(self):
+        pass
+
+    def preprocess_dataframe(self, df):
+        return preprocess_dataframe(df, **self.preprocessing_dict)
+
+    @property
+    def dataframe(self):
+        if self._df_cache is None:
+            self._df_cache = self.fetch_dataframe()
+            if self.preprocessing_dict:
+                self._df_cache = self.preprocess_dataframe(self._df_cache)
+        return self._df_cache
+
+
+class FileTable(Table):
+    def __init__(self, *args, fpath, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fpath = fpath
+
+    def fetch_dataframe(self):
+        df = pd.read_csv(self.fpath)
+        return df
+
     @classmethod
-    def from_dataframe(cls, name, df, preprocess=True):
-        preprocessing_dict = {}
-        if preprocess:
+    def from_file(cls, path, clean=True):
+        fpath = os.path.join(path)
+        fname = '.'.join(os.path.basename(fpath).split('.')[:-1])
+
+        table = cls(name=fname, fpath=fpath)
+        df = table.fetch_dataframe()
+        if clean:
             preprocessing_dict = make_preprocessing_dict(df)
-            df = preprocess_dataframe(df, **preprocessing_dict)
-        return cls(name=name, df=df, preprocessing_dict=preprocessing_dict)
+            table.preprocessing_dict = preprocessing_dict
+
+        return table

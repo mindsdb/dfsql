@@ -38,7 +38,7 @@ class TestFileSystemDataSource:
         assert ds.tables and len(ds.tables) == 1
         table = ds.tables['titanic']
         assert table.name == csv_file.purebasename
-        assert pd.read_csv(csv_file).shape == table.df.shape
+        assert pd.read_csv(csv_file).shape == table.dataframe.shape
 
     def test_add_from_file(self, csv_file):
         ds = FileSystemDataSource()
@@ -46,7 +46,7 @@ class TestFileSystemDataSource:
         ds.add_table_from_file(str(csv_file))
         table = ds.tables['titanic']
         assert table.name == csv_file.purebasename
-        assert pd.read_csv(csv_file).shape == table.df.shape
+        assert pd.read_csv(csv_file).shape == table.dataframe.shape
 
     def test_file_preprocessing(self, csv_file):
         source_df = pd.read_csv(str(csv_file))
@@ -61,24 +61,22 @@ class TestFileSystemDataSource:
         assert not ds.tables and len(ds.tables) == 0
 
         # No preprocessing changes nothing
-        ds.add_table_from_file(str(csv_file), preprocess=False)
-        assert ds.tables['titanic'].df.shape == df.shape
-        assert (ds.tables['titanic'].df.dropna().values == df.dropna().values).all().all()
+        ds.add_table_from_file(str(csv_file), clean=False)
+        assert ds.tables['titanic'].dataframe.shape == df.shape
+        assert (ds.tables['titanic'].dataframe.dropna().values == df.dropna().values).all().all()
         ds.drop_table('titanic')
         assert not ds.tables
 
-        # Preprocessing applied
-        ds.add_table_from_file(str(csv_file), preprocess=True)
+        # cleaning applied
+        ds.add_table_from_file(str(csv_file), clean=True)
         # Empty rows removed, empty columns removed, columns renamed
-        new_df = ds.tables['titanic'].df
+        new_df = ds.tables['titanic'].dataframe
         empty_rows = pd.isnull(new_df).all(axis=1)
         assert not empty_rows.any()
         empty_columns = pd.isnull(new_df).all(axis=0)
         assert not empty_columns.any()
         assert len(new_df) == len(source_df) # Duplicate dropped
         assert new_df.columns[8] == 'ticket_number'
-
-        assert (new_df.dropna().values == source_df.dropna().values).all().all()
 
         preprocessing_dict = ds.tables['titanic'].preprocessing_dict
         assert preprocessing_dict['empty_rows'] == [9]
@@ -94,7 +92,7 @@ class TestFileSystemDataSource:
         assert ds.tables and len(ds.tables) == 1
         table = ds.tables['titanic']
         assert table.name == csv_file.purebasename
-        assert pd.read_csv(csv_file).shape == table.df.shape
+        assert pd.read_csv(csv_file).shape == table.dataframe.shape
 
     def test_create_table_error_on_recreate(self, csv_file, data_source):
         assert data_source.tables['titanic']

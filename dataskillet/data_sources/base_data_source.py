@@ -52,7 +52,7 @@ class DataSource:
         if table_name not in self:
             raise(Exception(f'Unknown table {table_name}'))
         else:
-            return self.tables[table_name].df
+            return self.tables[table_name].dataframe
 
     def execute_groupby_identifier(self, query, df):
         col_name = query.value
