@@ -1,5 +1,5 @@
 import pytest
-from dataskillet.data_sources import FileSystemDataSource
+from dataskillet.data_sources import DataSource
 import modin.pandas as pd
 import numpy as np
 import os
@@ -30,21 +30,21 @@ def csv_file(tmpdir):
 @pytest.fixture()
 def data_source(csv_file, tmpdir):
     dir_path = csv_file.dirpath()
-    ds = FileSystemDataSource.from_dir(metadata_dir=str(tmpdir), files_dir_path=dir_path)
+    ds = DataSource.from_dir(metadata_dir=str(tmpdir), files_dir_path=dir_path)
     return ds
 
 
-class TestFileSystemDataSource:
+class TestDataSource:
     def test_created_from_dir(self, csv_file):
         dir_path = csv_file.dirpath()
-        ds = FileSystemDataSource.from_dir(metadata_dir=dir_path, files_dir_path=dir_path)
+        ds = DataSource.from_dir(metadata_dir=dir_path, files_dir_path=dir_path)
         assert ds.tables and len(ds.tables) == 1
         table = ds.tables['titanic']
         assert table.name == csv_file.purebasename
         assert pd.read_csv(csv_file).shape == table.dataframe.shape
 
     def test_add_from_file(self, csv_file):
-        ds = FileSystemDataSource(metadata_dir=csv_file.dirpath())
+        ds = DataSource(metadata_dir=csv_file.dirpath())
         assert not ds.tables and len(ds.tables) == 0
         ds.add_table_from_file(str(csv_file))
         table = ds.tables['titanic']
@@ -53,7 +53,7 @@ class TestFileSystemDataSource:
 
     def test_save_metadata(self, csv_file):
         assert not [f for f in os.listdir(csv_file.dirpath()) if f.endswith('.json')]
-        ds = FileSystemDataSource(metadata_dir=csv_file.dirpath())
+        ds = DataSource(metadata_dir=csv_file.dirpath())
         assert 'datasource_tables.json' in [f for f in os.listdir(csv_file.dirpath()) if f.endswith('.json')]
         json_data = json.load(open(os.path.join(csv_file.dirpath(), 'datasource_tables.json')))
         assert json_data == {}
@@ -69,14 +69,14 @@ class TestFileSystemDataSource:
 
         with pytest.raises(Exception):
             # Can't implicitly overwrite table metadata
-            FileSystemDataSource(metadata_dir=csv_file.dirpath(), tables=Table())
+            DataSource(metadata_dir=csv_file.dirpath(), tables=Table())
 
         # Metadata is loaded if a data source is created from the same dir
-        ds2 = FileSystemDataSource(metadata_dir=csv_file.dirpath())
+        ds2 = DataSource(metadata_dir=csv_file.dirpath())
         assert ds2.tables['titanic']
 
         # Metadata is cleared when requested explicitly
-        ds3 = FileSystemDataSource.create_new(metadata_dir=csv_file.dirpath())
+        ds3 = DataSource.create_new(metadata_dir=csv_file.dirpath())
         assert not ds3.tables
 
     def test_file_preprocessing(self, csv_file):
@@ -88,7 +88,7 @@ class TestFileSystemDataSource:
         df = df.rename(columns={'ticket': 'Ticket Number '}) # Bad column name
         df.to_csv(csv_file, index=None)
 
-        ds = FileSystemDataSource(metadata_dir=csv_file.dirpath())
+        ds = DataSource(metadata_dir=csv_file.dirpath())
         assert not ds.tables and len(ds.tables) == 0
 
         # No preprocessing changes nothing
@@ -115,7 +115,7 @@ class TestFileSystemDataSource:
         assert preprocessing_dict['rename']['Ticket Number '] == 'ticket_number'
 
     def test_create_table(self, csv_file):
-        ds = FileSystemDataSource(metadata_dir=csv_file.dirpath())
+        ds = DataSource(metadata_dir=csv_file.dirpath())
         assert not ds.tables and len(ds.tables) == 0
         sql = f"CREATE TABLE ('{str(csv_file)}', True)"
         query_result = ds.query(sql)
@@ -301,7 +301,7 @@ class TestFileSystemDataSource:
         p.write_text(content, encoding='utf-8')
 
         dir_path = csv_file.dirpath()
-        data_source = FileSystemDataSource.from_dir(metadata_dir=dir_path, files_dir_path=dir_path)
+        data_source = DataSource.from_dir(metadata_dir=dir_path, files_dir_path=dir_path)
         assert len(data_source.tables) == 2
 
         df = pd.read_csv(csv_file)

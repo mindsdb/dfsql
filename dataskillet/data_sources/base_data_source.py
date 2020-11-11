@@ -4,7 +4,7 @@ import numpy as np
 import json
 from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star, Function,
                                     AggregateFunction, Join, BinaryOperation)
-from dataskillet.table import Table
+from dataskillet.table import Table, FileTable
 
 
 def get_modin_operation(sql_op):
@@ -49,6 +49,23 @@ class DataSource:
     def clear_metadata(cls, metadata_dir):
         if os.path.exists(os.path.join(metadata_dir, 'datasource_tables.json')):
             os.remove(os.path.join(metadata_dir, 'datasource_tables.json'))
+
+    def add_table_from_file(self, path, clean=True):
+        table = FileTable.from_file(path, clean=clean)
+        self.add_table(table)
+
+    @staticmethod
+    def from_dir(metadata_dir, files_dir_path):
+        files = os.listdir(files_dir_path)
+        ds = DataSource(metadata_dir=metadata_dir)
+        for f in files:
+            if f.endswith('.csv'):
+                fpath = os.path.join(files_dir_path, f)
+                ds.add_table_from_file(fpath)
+
+        if not ds.tables:
+            raise(Exception(f'Directory {files_dir_path} does not contain any spreadsheet files'))
+        return ds
 
     def load_metadata(self):
         if not os.path.exists(os.path.join(self.metadata_dir, 'datasource_tables.json')):
