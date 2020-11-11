@@ -1,7 +1,10 @@
+import os
 import modin.pandas as pd
 import numpy as np
+import json
 from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star, Function,
                                     AggregateFunction, Join, BinaryOperation)
+from dataskillet.table import Table
 
 
 def get_modin_operation(sql_op):
@@ -22,8 +25,58 @@ def get_modin_operation(sql_op):
 
 
 class DataSource:
-    def __init__(self, tables=None):
+    def __init__(self, metadata_dir, tables=None):
+        self.metadata_dir = metadata_dir
+
+        self.tables = None
+        self.load_metadata()
+
+        if self.tables and tables:
+            raise Exception(f'Table metadata already exists in directory {metadata_dir}, but tables also passed to DataSource constructor. '
+                            f'\nEither load the previous metadata by omitting the tables argument, or explicitly overwrite old metadata by using DataSource.create_new(metadata_dir, tables).')
+
         self.tables = {t.name.lower(): t for t in tables} if tables else {}
+        self.save_metadata()
+
+    @classmethod
+    def create_new(cls, metadata_dir, tables=None):
+        cls.clear_metadata(metadata_dir)
+        return cls(metadata_dir, tables=tables)
+
+    @classmethod
+    def clear_metadata(cls, metadata_dir):
+        if os.path.exists(metadata_dir) and os.path.isdir(metadata_dir):
+            os.rmdir(metadata_dir)
+
+    def load_metadata(self):
+        if not os.path.exists(os.path.join(self.metadata_dir, 'datasource_tables.json')):
+            return
+
+        new_tables = {}
+        with open(os.path.join(self.metadata_dir, 'datasource_tables.json'), 'r') as f:
+            table_data = json.load(f)
+
+        for tname, table_json in table_data.items():
+            new_tables[tname] = Table.from_json(table_json)
+
+        self.tables = new_tables
+
+    def save_metadata(self, overwrite=True):
+        if not os.path.exists(self.metadata_dir):
+            os.makedirs(self.metadata_dir)
+
+        if not os.access(self.metadata_dir, os.W_OK):
+            raise Exception(f'Directory {self.metadata_dir} not writable')
+
+        tables_dump = {
+            tname: table.to_json() for tname, table in self.tables.items()
+        }
+
+        if not overwrite and os.path.exists(os.path.join(self.metadata_dir, 'datasource_tables.json')):
+            raise Exception('Table metadata already exists, but overwrite is False.')
+
+        with open(os.path.join(self.metadata_dir, 'datasource_tables.json'), 'w') as f:
+            f.write(json.dumps(tables_dump))
 
     def __contains__(self, table_name):
         return table_name in self.tables
@@ -32,9 +85,11 @@ class DataSource:
         if self.tables.get(table.name):
             raise Exception(f'Table {table.name} already exists in data source, use DROP TABLE to remove it if you want to recreate it.')
         self.tables[table.name] = table
+        self.save_metadata()
 
     def drop_table(self, name):
         del self.tables[name]
+        self.save_metadata()
 
     def execute_command(self, command):
         return command.execute(self)

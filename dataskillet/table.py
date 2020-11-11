@@ -12,8 +12,8 @@ def preprocess_column_name(text):
 
 def make_preprocessing_dict(df):
     rename = {col: preprocess_column_name(col) for col in df.columns}
-    empty_rows = list(df.index[df.isnull().all(axis=1)].values)
-    drop_columns = list(df.columns[df.isnull().all(axis=0)].values)
+    empty_rows = df.index[df.isnull().all(axis=1)].values.tolist()
+    drop_columns = df.columns[df.isnull().all(axis=0)].values.tolist()
     return dict(rename=rename, empty_rows=empty_rows, drop_columns=drop_columns)
 
 
@@ -25,7 +25,7 @@ def preprocess_dataframe(df, rename, empty_rows, drop_columns):
 
 
 class Table:
-    def __init__(self, name, preprocessing_dict=None):
+    def __init__(self, name, *args, preprocessing_dict=None, **kwargs):
         self.name = name
         self.preprocessing_dict = preprocessing_dict
 
@@ -47,6 +47,21 @@ class Table:
             if self.preprocessing_dict:
                 self._df_cache = self.preprocess_dataframe(self._df_cache)
         return self._df_cache
+
+    def to_json(self):
+        return dict(
+            type=self.__class__.__name__,
+            name=self.name,
+            preprocessing_dict=self.preprocessing_dict,
+        )
+
+    @staticmethod
+    def from_json(json):
+        cls = {
+            'Table': Table,
+            'FileTable': FileTable
+        }[json['type']]
+        return cls(**json)
 
 
 class FileTable(Table):
@@ -70,3 +85,8 @@ class FileTable(Table):
             table.preprocessing_dict = preprocessing_dict
 
         return table
+
+    def to_json(self):
+        json = super().to_json()
+        json['fpath'] = self.fpath
+        return json

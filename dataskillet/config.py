@@ -12,4 +12,3 @@ def process_engine_options(value):
 
 class Configuration(BaseEnvironConfig):
     MODIN_ENGINE = ConfigField(processor=process_engine_options, default='dask')
-

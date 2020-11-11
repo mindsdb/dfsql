@@ -23,23 +23,23 @@ def csv_file(tmpdir):
 
 
 @pytest.fixture()
-def data_source(csv_file):
+def data_source(csv_file, tmpdir):
     dir_path = csv_file.dirpath()
-    ds = FileSystemDataSource.from_dir(dir_path)
+    ds = FileSystemDataSource.from_dir(metadata_dir=str(tmpdir), files_dir_path=dir_path)
     return ds
 
 
 class TestFileSystemDataSource:
     def test_created_from_dir(self, csv_file):
         dir_path = csv_file.dirpath()
-        ds = FileSystemDataSource.from_dir(dir_path)
+        ds = FileSystemDataSource.from_dir(metadata_dir=dir_path, files_dir_path=dir_path)
         assert ds.tables and len(ds.tables) == 1
         table = ds.tables['titanic']
         assert table.name == csv_file.purebasename
         assert pd.read_csv(csv_file).shape == table.dataframe.shape
 
     def test_add_from_file(self, csv_file):
-        ds = FileSystemDataSource()
+        ds = FileSystemDataSource(metadata_dir=csv_file.dirpath())
         assert not ds.tables and len(ds.tables) == 0
         ds.add_table_from_file(str(csv_file))
         table = ds.tables['titanic']
@@ -55,7 +55,7 @@ class TestFileSystemDataSource:
         df = df.rename(columns={'ticket': 'Ticket Number '}) # Bad column name
         df.to_csv(csv_file, index=None)
 
-        ds = FileSystemDataSource()
+        ds = FileSystemDataSource(metadata_dir=csv_file.dirpath())
         assert not ds.tables and len(ds.tables) == 0
 
         # No preprocessing changes nothing
@@ -82,7 +82,7 @@ class TestFileSystemDataSource:
         assert preprocessing_dict['rename']['Ticket Number '] == 'ticket_number'
 
     def test_create_table(self, csv_file):
-        ds = FileSystemDataSource()
+        ds = FileSystemDataSource(metadata_dir=csv_file.dirpath())
         assert not ds.tables and len(ds.tables) == 0
         sql = f"CREATE TABLE ('{str(csv_file)}', True)"
         query_result = ds.query(sql)
@@ -268,7 +268,7 @@ class TestFileSystemDataSource:
         p.write_text(content, encoding='utf-8')
 
         dir_path = csv_file.dirpath()
-        data_source = FileSystemDataSource.from_dir(dir_path)
+        data_source = FileSystemDataSource.from_dir(metadata_dir=dir_path, files_dir_path=dir_path)
         assert len(data_source.tables) == 2
 
         df = pd.read_csv(csv_file)
