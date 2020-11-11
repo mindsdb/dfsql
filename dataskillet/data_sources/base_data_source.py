@@ -28,6 +28,7 @@ class DataSource:
     def __init__(self, metadata_dir, tables=None):
         self.metadata_dir = metadata_dir
 
+        tables = {t.name.lower(): t for t in tables} if tables else {}
         self.tables = None
         self.load_metadata()
 
@@ -35,7 +36,8 @@ class DataSource:
             raise Exception(f'Table metadata already exists in directory {metadata_dir}, but tables also passed to DataSource constructor. '
                             f'\nEither load the previous metadata by omitting the tables argument, or explicitly overwrite old metadata by using DataSource.create_new(metadata_dir, tables).')
 
-        self.tables = {t.name.lower(): t for t in tables} if tables else {}
+        if not self.tables:
+            self.tables = tables
         self.save_metadata()
 
     @classmethod
@@ -45,8 +47,8 @@ class DataSource:
 
     @classmethod
     def clear_metadata(cls, metadata_dir):
-        if os.path.exists(metadata_dir) and os.path.isdir(metadata_dir):
-            os.rmdir(metadata_dir)
+        if os.path.exists(os.path.join(metadata_dir, 'datasource_tables.json')):
+            os.remove(os.path.join(metadata_dir, 'datasource_tables.json'))
 
     def load_metadata(self):
         if not os.path.exists(os.path.join(self.metadata_dir, 'datasource_tables.json')):

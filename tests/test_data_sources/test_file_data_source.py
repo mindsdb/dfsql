@@ -2,6 +2,11 @@ import pytest
 from dataskillet.data_sources import FileSystemDataSource
 import modin.pandas as pd
 import numpy as np
+import os
+import json
+
+from dataskillet.table import Table
+
 
 @pytest.fixture()
 def csv_file(tmpdir):
@@ -45,6 +50,34 @@ class TestFileSystemDataSource:
         table = ds.tables['titanic']
         assert table.name == csv_file.purebasename
         assert pd.read_csv(csv_file).shape == table.dataframe.shape
+
+    def test_save_metadata(self, csv_file):
+        assert not [f for f in os.listdir(csv_file.dirpath()) if f.endswith('.json')]
+        ds = FileSystemDataSource(metadata_dir=csv_file.dirpath())
+        assert 'datasource_tables.json' in [f for f in os.listdir(csv_file.dirpath()) if f.endswith('.json')]
+        json_data = json.load(open(os.path.join(csv_file.dirpath(), 'datasource_tables.json')))
+        assert json_data == {}
+
+        ds.add_table_from_file(csv_file)
+        assert ds.tables['titanic']
+        json_data = json.load(open(os.path.join(csv_file.dirpath(), 'datasource_tables.json')))
+        assert json_data.get('titanic') and list(json_data.keys()) == ['titanic']
+        assert json_data['titanic']['type'] == 'FileTable'
+        assert json_data['titanic']['name'] == 'titanic'
+        assert json_data['titanic']['preprocessing_dict']
+        assert json_data['titanic']['fpath'] == str(csv_file)
+
+        with pytest.raises(Exception):
+            # Can't implicitly overwrite table metadata
+            FileSystemDataSource(metadata_dir=csv_file.dirpath(), tables=Table())
+
+        # Metadata is loaded if a data source is created from the same dir
+        ds2 = FileSystemDataSource(metadata_dir=csv_file.dirpath())
+        assert ds2.tables['titanic']
+
+        # Metadata is cleared when requested explicitly
+        ds3 = FileSystemDataSource.create_new(metadata_dir=csv_file.dirpath())
+        assert not ds3.tables
 
     def test_file_preprocessing(self, csv_file):
         source_df = pd.read_csv(str(csv_file))
