@@ -9,6 +9,9 @@ from dataskillet.table import Table, FileTable
 
 def get_modin_operation(sql_op):
     operations = {
+        'and': lambda args: args[0] & args[1] if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] and args[1],
+        'or': lambda args: args[0] & args[1] if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] and args[1],
+        'not': lambda args: ~args[0]  if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else not args[1],
         '+': sum,
         '-': lambda args: args[0] - args[1],
         '=': lambda args: args[0] == args[1],
@@ -39,6 +42,16 @@ class DataSource:
         if not self.tables:
             self.tables = tables
         self.save_metadata()
+
+        self._query_scope = {}
+
+    @property
+    def query_scope(self):
+        """Stores aliases and tables available to a select during execution"""
+        return self._query_scope
+
+    def clear_query_scope(self):
+        self._query_scope = {}
 
     @classmethod
     def create_new(cls, metadata_dir, tables=None):
@@ -121,19 +134,16 @@ class DataSource:
         query = parse_sql(sql)
         return self.execute_query(query)
 
-    def execute_from_identifier(self, query):
+    def execute_table_identifier(self, query):
         table_name = query.value
         if table_name not in self:
             raise(Exception(f'Unknown table {table_name}'))
         else:
-            return self.tables[table_name].dataframe
-
-    def execute_groupby_identifier(self, query, df):
-        col_name = query.value
-        if col_name not in df.columns:
-            raise(Exception(f'Column {col_name} not found in dataframe'))
-
-        return col_name
+            df = self.tables[table_name].dataframe
+            scope = self.query_scope
+            scope[table_name] = df
+            scope[query.alias] = df
+            return df
 
     def execute_constant(self, query):
         value = query.value
@@ -144,9 +154,25 @@ class DataSource:
         op_func = get_modin_operation(query.op)
         return op_func(args)
 
+    def execute_column_identifier(self, query, df):
+        scope = self.query_scope
+
+        full_column_name = query.value
+        if full_column_name in df.columns:
+            return df[full_column_name]
+
+        if len(full_column_name.split('.')) > 1:
+            table_name, column_name = full_column_name.split('.')
+            if table_name and not table_name in scope:
+                raise Exception(f"Table name {table_name} not in scope.")
+
+            if column_name in df.columns:
+                return df[column_name]
+        raise Exception(f"Column {full_column_name} not found.")
+
     def execute_select_target(self, query, df):
         if isinstance(query, Identifier):
-            return df[query.value.lower()]
+            return self.execute_column_identifier(query, df)
         elif isinstance(query, Operation):
             return self.execute_operation(query, df)
 
@@ -291,7 +317,9 @@ class DataSource:
         if out_df.shape == (1, 1): # Just one value returned
             return out_df.values[0][0]
         elif out_df.shape[1] == 1: # Just one column, return series
-            return out_df.iloc[:, 0]
+            return out_df[out_df.columns[0]]
+
+        self.clear_query_scope()
         return out_df
 
     def execute_join(self, query):
@@ -300,13 +328,13 @@ class DataSource:
 
         left = query.left
         if isinstance(left, Identifier):
-            left = self.execute_from_identifier(left)
+            left = self.execute_table_identifier(left)
         else:
             left = self.execute_query(left)
 
         right = query.right
         if isinstance(right, Identifier):
-            right = self.execute_from_identifier(right)
+            right = self.execute_table_identifier(right)
         else:
             right = self.execute_query(right)
 
@@ -344,7 +372,7 @@ class DataSource:
 
     def execute_from_query(self, query):
         if isinstance(query, Identifier):
-            return self.execute_from_identifier(query)
+            return self.execute_table_identifier(query)
         if isinstance(query, Join):
             return self.execute_join(query)
         return self.execute_query(query)
@@ -357,7 +385,7 @@ class DataSource:
 
         for query in queries:
             if isinstance(query, Identifier):
-                col_names.append(self.execute_groupby_identifier(query, df))
+                col_names.append(self.execute_column_identifier(query, df))
             else:
                 raise Exception(f"Don't know how to aggregate by {str(query)}")
         return df.groupby(col_names)

@@ -7,4 +7,8 @@ class Constant(Statement):
         self.value = value
 
     def to_string(self, *args, **kwargs):
-        return self.maybe_add_alias(str(self.value))
+        if isinstance(self.value, str):
+            out_str = f"'{self.value}'"
+        else:
+            out_str = str(self.value)
+        return self.maybe_add_alias(out_str)

@@ -49,6 +49,17 @@ class TestParseSelect:
                                                                          args_=(Identifier('column1'), Constant(1))
                                                                          )))
 
+        query = """SELECT column1, column2 FROM t1 WHERE column1 = '1'"""
+
+        assert str(parse_sql(query)) == query
+
+        assert str(parse_sql(query)) == str(Select(targets=[Identifier("column1"), Identifier("column2")],
+                                                   from_table=[Identifier('t1')],
+                                                   where=BinaryOperation(op="=",
+                                                                         args_=(Identifier('column1'), Constant("1"))
+                                                                         )))
+
+
     def test_select_group_by(self):
         query = """SELECT column1, column2, sum(column3) as total FROM t1 GROUP BY column1, column2"""
 

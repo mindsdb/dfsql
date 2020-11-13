@@ -240,6 +240,25 @@ class TestDataSource:
         assert values_left.shape == values_right.shape
         assert (values_left == values_right).all()
 
+        sql = "SELECT passenger_id, survived FROM titanic WHERE titanic.survived = 1"
+        query_result = data_source.query(sql)
+        assert list(query_result.columns) == ['passenger_id', 'survived']
+        values_left = out_df[['passenger_id', 'survived']].values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+        assert (values_left == values_right).all()
+
+    def test_select_where_string(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        out_df = df[df['sex'] == 'male']['passenger_id']
+        sql = "SELECT passenger_id FROM titanic WHERE sex = 'male'"
+        query_result = data_source.query(sql)
+        assert query_result.name == 'passenger_id'
+        values_left = out_df.values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+        assert (values_left == values_right).all()
+
     def test_select_groupby_wrong_column(self, csv_file, data_source):
         sql = "SELECT survived, p_class, count(passenger_id) as count_passenger_id FROM titanic GROUP BY survived"
         with pytest.raises(Exception):

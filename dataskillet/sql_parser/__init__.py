@@ -21,6 +21,8 @@ def parse_constant(stmt):
         value = int(stmt['val']['Integer']['ival'])
     elif dtype == 'Float':
         value = float(stmt['val']['Float']['str'])
+    elif dtype == "String":
+        value = str(stmt['val']['String']['str'])
     return Constant(value=value, raw=stmt)
 
 
@@ -186,7 +188,7 @@ def parse_from_clause(stmt):
 
 def parse_select_statement(select_stmt):
     select_stmt = select_stmt['SelectStmt']
-
+    print(select_stmt)
     targets = []
     for target in select_stmt['targetList']:
         targets.append(parse_target(target['ResTarget']))

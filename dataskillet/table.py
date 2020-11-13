@@ -6,7 +6,7 @@ import os
 
 def preprocess_column_name(text):
     text = re.sub(' +', ' ', text)
-    text = "".join(c for c in text if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_').replace('-', '_').lower()
+    text = "".join(c for c in text if c.isalnum() or c in (' ', '_', '-')).strip().replace('.', '_').replace(' ', '_').replace('-', '_').lower()
     return text
 
 
