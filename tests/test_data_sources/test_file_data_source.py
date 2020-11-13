@@ -248,6 +248,38 @@ class TestDataSource:
         assert values_left.shape == values_right.shape
         assert (values_left == values_right).all()
 
+        out_df = df[(df.survived == 1) & (df.sex == 'male') & (df.age > 10)][['passenger_id', 'survived']]
+        sql = "SELECT passenger_id, survived FROM titanic WHERE survived = 1 AND sex = 'male' AND age > 10"
+        query_result = data_source.query(sql)
+        assert list(query_result.columns) == ['passenger_id', 'survived']
+        values_left = out_df[['passenger_id', 'survived']].values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+        assert (values_left == values_right).all()
+
+    def test_where_operator_order(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        # And surviving females or children
+        out_df = df[((df.survived == 1) & (df.sex == 'female')) | (df.age < 10)][['passenger_id', 'survived', 'sex', 'age']]
+        sql = "SELECT passenger_id, survived, sex, age FROM titanic WHERE survived = 1 AND sex = 'female' OR age < 10"
+        query_result = data_source.query(sql)
+        assert list(query_result.columns) == ['passenger_id', 'survived', 'sex', 'age']
+        values_left = out_df.values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+        assert (values_left == values_right).all()
+
+        out_df = df[(df.survived == 1) & ((df.sex == 'female') | (df.age < 10))][
+            ['passenger_id', 'survived', 'sex', 'age']]
+        sql = "SELECT passenger_id, survived, sex, age FROM titanic WHERE survived = 1 AND (sex = 'female' OR age < 10)"
+        query_result = data_source.query(sql)
+        assert list(query_result.columns) == ['passenger_id', 'survived', 'sex', 'age']
+        values_left = out_df.values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+        assert (values_left == values_right).all()
+
+
     def test_select_where_string(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
         out_df = df[df['sex'] == 'male']['passenger_id']

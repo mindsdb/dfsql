@@ -10,8 +10,8 @@ from dataskillet.table import Table, FileTable
 def get_modin_operation(sql_op):
     operations = {
         'and': lambda args: args[0] & args[1] if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] and args[1],
-        'or': lambda args: args[0] & args[1] if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] and args[1],
-        'not': lambda args: ~args[0]  if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else not args[1],
+        'or': lambda args: args[0] | args[1] if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] or args[1],
+        'not': lambda args: ~args[0] if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else not args[1],
         '+': sum,
         '-': lambda args: args[0] - args[1],
         '=': lambda args: args[0] == args[1],
