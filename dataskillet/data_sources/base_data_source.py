@@ -16,6 +16,8 @@ def get_modin_operation(sql_op):
         '-': lambda args: args[0] - args[1],
         '=': lambda args: args[0] == args[1],
         '!=': lambda args: args[0] != args[1],
+        '>': lambda args: args[0] > args[1],
+        '<': lambda args: args[0] < args[1],
         'avg': 'mean',
         'sum': 'sum',
         'count': 'count',

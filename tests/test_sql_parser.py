@@ -198,6 +198,19 @@ class TestParseSelect:
             assert str(parse_sql(query)) == query
             assert str(parse_sql(query)) == str(Select(targets=[BinaryOperation(op=op, args_=(Identifier("column1"), Identifier("column2")))],))
 
+    def test_deep_binary_operation(self):
+        query = f"""SELECT column1 AND column2 AND column3"""
+        assert str(parse_sql(query)) == query
+        assert str(parse_sql(query)) == str(
+            Select(targets=[BinaryOperation(op='AND', args_=(Identifier("column1"),
+                                                             BinaryOperation(op='AND', args_=(
+                                                                Identifier("column2"), Identifier("column3")))
+                                                             ))], ))
+
+    def test_operation_priority(self):
+        # TODO
+        pass
+
     def test_unary_comparison_predicates(self):
         ops = ['IS NULL', 'IS NOT NULL', 'IS TRUE', 'IS FALSE']
         for op in ops:

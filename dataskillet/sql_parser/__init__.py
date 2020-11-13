@@ -77,7 +77,13 @@ def parse_func_call(stmt):
 def parse_bool_expr(stmt):
     op = LOOKUP_BOOL_OPERATION[stmt['boolop']]
     args = [parse_statement(arg) for arg in stmt['args']]
-    return operation_factory(op=op, args=args, raw=stmt)
+
+    def nested_ops(op, args):
+        if len(args) > 2:
+            return operation_factory(op, args=(args[0], nested_ops(op, args[1:])))
+        return operation_factory(op, args=args)
+
+    return nested_ops(op, args)
 
 
 def parse_sublink(stmt):
@@ -188,7 +194,7 @@ def parse_from_clause(stmt):
 
 def parse_select_statement(select_stmt):
     select_stmt = select_stmt['SelectStmt']
-    print(select_stmt)
+    #print(select_stmt)
     targets = []
     for target in select_stmt['targetList']:
         targets.append(parse_target(target['ResTarget']))
