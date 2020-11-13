@@ -18,10 +18,11 @@ def get_modin_operation(sql_op):
         '!=': lambda args: args[0] != args[1],
         '>': lambda args: args[0] > args[1],
         '<': lambda args: args[0] < args[1],
+        'in': lambda args: args[0].isin(list(args[1])) if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] in args[1],
+
         'avg': 'mean',
         'sum': 'sum',
         'count': 'count',
-        'in': lambda args: args[0].isin(list(args[1])) if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] in args[1]
     }
     op = operations.get(sql_op.lower())
     if not op:
@@ -236,7 +237,6 @@ class DataSource:
             else:
                 if col_name not in group_by_cols and col_df_name not in group_by_cols:
                     raise Exception(f'Column {col_df_name}({col_name}) not found in GROUP BY clause')
-
         aggregate_result = source_df.agg(agg)
         for col_index in aggregate_result.reset_index().columns:
             if isinstance(col_index, tuple):
@@ -354,8 +354,6 @@ class DataSource:
         left_on = left_on.value.split('.')[-1]
         right_on = right_on.value.split('.')[-1]
         out_df = pd.merge(left, right, how=join_type, left_on=[left_on], right_on=[right_on], suffixes=('_x', '_y'))
-        out_df = out_df.drop(columns=[f'{left_on}_y', f'{right_on}_x'])
-
         renaming = {f'{left_on}_x': left_on, f'{right_on}_y': right_on}
 
         for col in out_df.columns:

@@ -194,7 +194,7 @@ def parse_from_clause(stmt):
 
 def parse_select_statement(select_stmt):
     select_stmt = select_stmt['SelectStmt']
-    print(select_stmt)
+    #print(select_stmt)
     targets = []
     for target in select_stmt['targetList']:
         targets.append(parse_target(target['ResTarget']))
