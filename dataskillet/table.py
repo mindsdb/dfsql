@@ -21,6 +21,7 @@ def preprocess_dataframe(df, rename, empty_rows, drop_columns):
     df = df.rename(columns=rename)
     df = df.drop(drop_columns, axis=1)
     df = df.drop(empty_rows, axis=0)
+    df = df.convert_dtypes()
     return df
 
 

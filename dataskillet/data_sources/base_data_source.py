@@ -2,8 +2,9 @@ import os
 import modin.pandas as pd
 import numpy as np
 import json
-from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star, Function,
-                                    AggregateFunction, Join, BinaryOperation)
+from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
+                                    Function,
+                                    AggregateFunction, Join, BinaryOperation, TypeCast)
 from dataskillet.table import Table, FileTable
 
 
@@ -28,6 +29,12 @@ def get_modin_operation(sql_op):
     if not op:
         raise(Exception(f'Unsupported operation: {sql_op}'))
     return op
+
+
+def cast_type(obj, type_name):
+    if not hasattr(obj, 'astype'):
+        obj = pd.Series(obj)
+    return obj.astype(type_name)
 
 
 class DataSource:
@@ -173,11 +180,18 @@ class DataSource:
                 return df[column_name]
         raise Exception(f"Column {full_column_name} not found.")
 
+    def execute_type_cast(self, query, df):
+        type_name = query.type_name
+        arg = self.execute_select_target(query.arg, df)
+        return cast_type(arg, type_name)
+
     def execute_select_target(self, query, df):
         if isinstance(query, Identifier):
             return self.execute_column_identifier(query, df)
         elif isinstance(query, Operation):
             return self.execute_operation(query, df)
+        elif isinstance(query, TypeCast):
+            return self.execute_type_cast(query, df)
 
         return self.execute_query(query)
 
@@ -198,10 +212,17 @@ class DataSource:
                 if not target.alias:
                     raise (Exception(f'Alias required for {target}'))
                 out_column_names.append(target.alias)
-            out_columns.append(self.execute_select_target(target, source_df))
+            select_target_result = self.execute_select_target(target, source_df)
+            out_columns.append(select_target_result)
         out_dict = {col: values for col, values in zip(out_column_names, out_columns)}
-        out_df = pd.DataFrame(out_dict)
+
+        try:
+            out_df = pd.DataFrame(out_dict)
+        except ValueError:
+            # Handle case where only scalar values are passed
+            out_df = pd.DataFrame(out_dict, index=[0])
         return out_df
+
 
     def execute_select_groupby_targets(self, targets, source_df, group_by):
         funcs_to_alias = {}
@@ -265,7 +286,9 @@ class DataSource:
         return out_df
 
     def execute_select(self, query):
-        from_table = [self.execute_from_query(sub_q) for sub_q in query.from_table]
+        from_table = [pd.DataFrame()]
+        if query.from_table:
+            from_table = [self.execute_from_query(sub_q) for sub_q in query.from_table]
 
         if len(from_table) != 1:
             raise(Exception(f'No idea how to deal with from_table len {len(from_table)}'))
@@ -396,4 +419,4 @@ class DataSource:
         elif isinstance(query, Constant):
             return self.execute_constant(query)
         else:
-            raise (Exception(f'Unexpected query thing {type(query)}'))
+            raise (Exception(f'No idea how to execute query statement {type(query)}'))

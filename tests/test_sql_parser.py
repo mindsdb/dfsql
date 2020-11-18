@@ -1,6 +1,7 @@
 import pytest
 from dataskillet.sql_parser import (parse_sql, Select, Constant, Star, Identifier, BinaryOperation, Function,
-                                    OrderBy, Join, InOperation, SQLParsingException, UnaryOperation, ComparisonPredicate)
+                                    OrderBy, Join, InOperation, SQLParsingException, UnaryOperation,
+                                    ComparisonPredicate, TypeCast)
 
 
 class TestParseSelect:
@@ -58,7 +59,6 @@ class TestParseSelect:
                                                    where=BinaryOperation(op="=",
                                                                          args_=(Identifier('column1'), Constant("1"))
                                                                          )))
-
 
     def test_select_group_by(self):
         query = """SELECT column1, column2, sum(column3) as total FROM t1 GROUP BY column1, column2"""
@@ -238,3 +238,9 @@ class TestParseSelect:
             assert str(parse_sql(query)) == query
             assert str(parse_sql(query)) == str(
                 Select(targets=[Function(op=op, args_=(Identifier("column1"),))]))
+
+    def test_cast(self):
+        query = f"""SELECT CAST(4 as int64) as result"""
+
+        assert str(parse_sql(query)) == str(
+                Select(targets=[TypeCast(type_name='int64', arg=Constant(4), alias='result')]))

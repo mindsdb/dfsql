@@ -114,6 +114,10 @@ class TestDataSource:
         assert preprocessing_dict['drop_columns'] == ['empty_column']
         assert preprocessing_dict['rename']['Ticket Number '] == 'ticket_number'
 
+    def test_simple_select(self, data_source):
+        sql = "SELECT 1 as result"
+        assert data_source.query(sql) == 1
+
     def test_create_table(self, csv_file):
         ds = DataSource(metadata_dir=csv_file.dirpath())
         assert not ds.tables and len(ds.tables) == 0
@@ -252,6 +256,8 @@ class TestDataSource:
         sql = "SELECT passenger_id, survived FROM titanic WHERE survived = 1 AND sex = 'male' AND age > 10"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['passenger_id', 'survived']
+        print(query_result)
+        assert query_result.empty
         values_left = out_df[['passenger_id', 'survived']].values
         values_right = query_result.values
         assert values_left.shape == values_right.shape
@@ -466,3 +472,20 @@ class TestDataSource:
         data_source.drop_table('titanic')
         query_result = data_source.query(sql)
         assert query_result.empty
+
+    def test_cast(self, csv_file, data_source):
+        sql = "SELECT CAST (4 as str) as result"
+        query_result = data_source.query(sql)
+        assert query_result == "4" and isinstance(query_result, str)
+
+        sql = "SELECT CAST ('4' as int) as result"
+        query_result = data_source.query(sql)
+        assert query_result == 4 and isinstance(query_result, np.int64)
+
+        sql = "SELECT CAST ('4' as float) as result"
+        query_result = data_source.query(sql)
+        assert query_result == 4.0 and isinstance(query_result, np.float64)
+
+
+
+

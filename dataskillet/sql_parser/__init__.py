@@ -12,6 +12,8 @@ from dataskillet.commands import command_types
 
 import pglast
 
+from dataskillet.sql_parser.type_cast import TypeCast, MAP_DTYPES
+
 
 def parse_constant(stmt):
     dtype = next(iter(stmt['val'].keys()))
@@ -121,6 +123,14 @@ def parse_nulltest(stmt):
                           raw=stmt)
 
 
+def parse_typecast(stmt):
+    arg = parse_statement(stmt['arg'])
+    type_name = [name['String']['str'] for name in stmt['typeName']['TypeName']['names']][-1].lower()
+    if MAP_DTYPES.get(type_name):
+        type_name = MAP_DTYPES.get(type_name)
+    return TypeCast(type_name=type_name, arg=arg, raw=stmt)
+
+
 def parse_statement(stmt):
     target_type = next(iter(stmt.keys()))
     if target_type == 'A_Const':
@@ -141,6 +151,8 @@ def parse_statement(stmt):
         return parse_nulltest(stmt['NullTest'])
     elif target_type == 'BooleanTest':
         return parse_booltest(stmt['BooleanTest'])
+    elif target_type == 'TypeCast':
+        return parse_typecast(stmt['TypeCast'])
     else:
         raise SQLParsingException(f'No idea how to parse {str(stmt)}')
 
