@@ -196,8 +196,15 @@ class DataSource:
         return self.execute_query(query)
 
     def execute_select_targets(self, targets, source_df):
-        out_column_names = []
-        out_columns = []
+        out_df = pd.DataFrame()
+
+        out_names = []
+
+        iterable_names = []
+        iterable_columns = []
+
+        scalar_names = []
+        scalar_values = []
         # Expand star
         for i, target in enumerate(targets):
             if isinstance(target, Star):
@@ -206,23 +213,31 @@ class DataSource:
                 break
 
         for target in targets:
+            col_name = target.alias if target.alias else target.value
             if isinstance(target, Identifier):
-                out_column_names.append(target.alias if target.alias else target.value)
+                out_names.append(col_name)
             else:
                 if not target.alias:
                     raise (Exception(f'Alias required for {target}'))
-                out_column_names.append(target.alias)
+                out_names.append(target.alias)
             select_target_result = self.execute_select_target(target, source_df)
-            out_columns.append(select_target_result)
-        out_dict = {col: values for col, values in zip(out_column_names, out_columns)}
+            if isinstance(select_target_result, pd.Series):
+                iterable_names.append(col_name)
+                iterable_columns.append(select_target_result)
+            else:
+                scalar_names.append(col_name)
+                scalar_values.append(select_target_result)
 
-        try:
-            out_df = pd.DataFrame(out_dict)
-        except ValueError:
-            # Handle case where only scalar values are passed
-            out_df = pd.DataFrame(out_dict, index=[0])
+        # Add columns first, then scalars, so the dataframe has proper index in the end
+        for i, col_name in enumerate(iterable_names):
+            out_df[col_name] = iterable_columns[i].tolist()
+        for i, col_name in enumerate(scalar_names):
+            if out_df.empty:
+                out_df[col_name] = [scalar_values[i]]
+            else:
+                out_df[col_name] = scalar_values[i]
+        out_df = out_df[out_names]
         return out_df
-
 
     def execute_select_groupby_targets(self, targets, source_df, group_by):
         funcs_to_alias = {}
@@ -258,6 +273,8 @@ class DataSource:
             else:
                 if col_name not in group_by_cols and col_df_name not in group_by_cols:
                     raise Exception(f'Column {col_df_name}({col_name}) not found in GROUP BY clause')
+        if isinstance(source_df, pd.Series):
+            source_df = pd.DataFrame(source_df)
         aggregate_result = source_df.agg(agg)
         for col_index in aggregate_result.reset_index().columns:
             if isinstance(col_index, tuple):
@@ -286,7 +303,6 @@ class DataSource:
         return out_df
 
     def execute_select(self, query):
-
         from_table = [pd.DataFrame()]
         if query.from_table:
             from_table = [self.execute_from_query(sub_q) for sub_q in query.from_table]
@@ -295,6 +311,7 @@ class DataSource:
             raise(Exception(f'No idea how to deal with from_table len {len(from_table)}'))
 
         source_df = from_table[0]
+
         if query.where:
             index = self.execute_operation(query.where, source_df)
             source_df = source_df[index]
@@ -340,10 +357,11 @@ class DataSource:
             limit = self.execute_query(query.limit)
             out_df = out_df.iloc[:limit, :]
 
+        self.clear_query_scope()
         if out_df.shape == (1, 1): # Just one value returned
             return out_df.values[0][0]
-
-        self.clear_query_scope()
+        elif out_df.shape[1] == 1:
+            return out_df[out_df.columns[0]]
         return out_df
 
     def execute_join(self, query):
