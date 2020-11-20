@@ -150,10 +150,10 @@ class TestDataSource:
 
         query_result = data_source.query(sql)
 
-        assert query_result.name == 'passenger_id'
+        assert query_result.columns[0] == 'passenger_id' and len(query_result.columns) == 1
 
         values_left = df['passenger_id'].values
-        values_right = query_result.values
+        values_right = query_result['passenger_id'].values
         assert (values_left == values_right).all()
 
     def test_select_all(self, csv_file, data_source):
@@ -172,25 +172,24 @@ class TestDataSource:
 
         query_result = data_source.query(sql)
 
-        assert query_result.name == 'p1'
+        assert query_result.columns[0] == 'p1'
 
         values_left = df['passenger_id'].values
-        values_right = query_result.values
+        values_right = query_result['p1'].values
         assert (values_left == values_right).all()
 
     def test_select_distinct(self, csv_file, data_source):
         sql = "SELECT DISTINCT survived FROM titanic"
         query_result = data_source.query(sql)
-        assert query_result.name == 'survived'
-        assert list(query_result.values) == [0, 1]
+        assert query_result.columns[0] == 'survived'
+        assert list(query_result.values.flatten()) == [0, 1]
 
     def test_select_limit_offset(self, csv_file, data_source):
         sql = "SELECT passenger_id FROM titanic LIMIT 2 OFFSET 2"
         query_result = data_source.query(sql)
 
-        df = pd.read_csv(csv_file)['passenger_id']
-        df = df.iloc[2:, :]
-        df = df.iloc[:2, :]
+        df = pd.read_csv(csv_file)[['passenger_id']]
+        df = df.iloc[2:4, :]
 
         assert query_result.shape == df.shape
         assert (df.values == query_result.values).all().all()
@@ -285,15 +284,14 @@ class TestDataSource:
         assert values_left.shape == values_right.shape
         assert (values_left == values_right).all()
 
-
     def test_select_where_string(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
         out_df = df[df['sex'] == 'male']['passenger_id']
         sql = "SELECT passenger_id FROM titanic WHERE sex = 'male'"
         query_result = data_source.query(sql)
-        assert query_result.name == 'passenger_id'
+        assert query_result.columns[0] == 'passenger_id'
         values_left = out_df.values
-        values_right = query_result.values
+        values_right = query_result['passenger_id'].values
         assert values_left.shape == values_right.shape
         assert (values_left == values_right).all()
 
@@ -451,8 +449,7 @@ class TestDataSource:
         query_result = data_source.query(sql)
 
         df = pd.read_csv(csv_file)
-        df = df[df.survived == 1]
-        df = df[['survived', 'p_class', 'passenger_id']]
+        df = df[df.survived == 1][['survived', 'p_class', 'passenger_id']]
 
         assert query_result.shape == df.shape
         values_left = df.dropna().values
@@ -485,6 +482,9 @@ class TestDataSource:
         sql = "SELECT CAST ('4' as float) as result"
         query_result = data_source.query(sql)
         assert query_result == 4.0 and isinstance(query_result, np.float64)
+
+
+
 
 
 

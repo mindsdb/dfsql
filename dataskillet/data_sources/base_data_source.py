@@ -19,7 +19,7 @@ def get_modin_operation(sql_op):
         '!=': lambda args: args[0] != args[1],
         '>': lambda args: args[0] > args[1],
         '<': lambda args: args[0] < args[1],
-        'in': lambda args: args[0].isin(list(args[1])) if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] in args[1],
+        'in': lambda args: args[0].isin(list(args[1].values.flatten())) if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] in args[1],
 
         'avg': 'mean',
         'sum': 'sum',
@@ -286,6 +286,7 @@ class DataSource:
         return out_df
 
     def execute_select(self, query):
+
         from_table = [pd.DataFrame()]
         if query.from_table:
             from_table = [self.execute_from_query(sub_q) for sub_q in query.from_table]
@@ -341,8 +342,6 @@ class DataSource:
 
         if out_df.shape == (1, 1): # Just one value returned
             return out_df.values[0][0]
-        elif out_df.shape[1] == 1: # Just one column, return series
-            return out_df[out_df.columns[0]]
 
         self.clear_query_scope()
         return out_df
