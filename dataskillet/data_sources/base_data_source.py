@@ -304,6 +304,12 @@ class DataSource:
         out_df = pd.DataFrame(out_dict)
         return out_df
 
+    def execute_order_by(self, order_by, df):
+        fields = [s.field.value for s in order_by]
+        sort_orders = [s.direction != 'DESC' for s in order_by]
+        df = df.sort_values(by=fields, ascending=sort_orders)
+        return df
+
     def execute_select(self, query):
         from_table = [pd.DataFrame()]
         if query.from_table:
@@ -358,6 +364,9 @@ class DataSource:
         if query.limit:
             limit = self.execute_query(query.limit)
             out_df = out_df.iloc[:limit, :]
+
+        if query.order_by:
+            out_df = self.execute_order_by(query.order_by, out_df)
 
         self.clear_query_scope()
         if out_df.shape == (1, 1): # Just one value returned

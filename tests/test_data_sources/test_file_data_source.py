@@ -479,7 +479,7 @@ class TestDataSource:
 
         assert query_result == 2
 
-    def test_where_and(self, data_source_googleplay, googleplay_csv):
+    def test_large_where_and(self, data_source_googleplay, googleplay_csv):
         df = pd.read_csv(googleplay_csv)
 
         out_df = df[(df.Category == 'FAMILY') & (df.Price == '0')][['App', 'Category']]
@@ -487,3 +487,42 @@ class TestDataSource:
         query_result = data_source_googleplay.query(sql)
 
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
+
+    def test_large_not(self, data_source_googleplay, googleplay_csv):
+        df = pd.read_csv(googleplay_csv)
+
+        out_df = df[~(df.Category == 'FAMILY')][['App', 'Category']]
+        sql = "SELECT app, category FROM googleplaystore WHERE NOT category = 'FAMILY'"
+        query_result = data_source_googleplay.query(sql)
+
+        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+
+    def test_large_order_by(self, data_source_googleplay, googleplay_csv):
+        df = pd.read_csv(googleplay_csv)
+
+        out_df = df.sort_values(by='App')[['App', 'Category']]
+        sql = "SELECT app, category FROM googleplaystore ORDER BY app"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+
+        out_df = df.sort_values(by='App', ascending=False)[['App', 'Category']]
+        sql = "SELECT app, category FROM googleplaystore ORDER BY app DESC"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+
+        out_df = df.sort_values(by=['App', 'Category'])[['App', 'Category']]
+        sql = "SELECT app, category FROM googleplaystore ORDER BY app, category"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+
+        out_df = df.sort_values(by=['App', 'Category'], ascending=[False, False])[['App', 'Category']]
+        sql = "SELECT app, category FROM googleplaystore ORDER BY app DESC, category DESC"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+
+        out_df = df.sort_values(by=['App', 'Category'], ascending=[False, True])[['App', 'Category']]
+        sql = "SELECT app, category FROM googleplaystore ORDER BY app DESC, category ASC"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+
+
