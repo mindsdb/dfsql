@@ -24,6 +24,7 @@ def get_modin_operation(sql_op):
         'avg': 'mean',
         'sum': 'sum',
         'count': 'count',
+        'count_distinct': 'nunique',
     }
     op = operations.get(sql_op.lower())
     if not op:

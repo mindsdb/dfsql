@@ -486,6 +486,9 @@ class TestDataSource:
         query_result = data_source.query(sql)
         assert query_result == 4.0 and isinstance(query_result, np.float64)
 
+    def test_count_distinct(self, csv_file, data_source):
+        sql = "SELECT COUNT(DISTINCT survived) as uniq_survived FROM titanic"
+        query_result = data_source.query(sql)
 
-
+        assert query_result == 2
 

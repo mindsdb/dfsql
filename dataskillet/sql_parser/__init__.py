@@ -67,6 +67,8 @@ def parse_rangevar(stmt):
 
 def parse_func_call(stmt):
     op = stmt['funcname'][0]['String']['str']
+    if stmt.get('agg_distinct'):
+        op += '_distinct'
     class_ = Function
     if op in AGGREGATE_FUNCTIONS:
         class_ = AggregateFunction
