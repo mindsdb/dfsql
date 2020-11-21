@@ -10,8 +10,8 @@ from dataskillet.table import Table, FileTable
 
 def get_modin_operation(sql_op):
     operations = {
-        'and': lambda args: args[0] & args[1] if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] and args[1],
-        'or': lambda args: args[0] | args[1] if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] or args[1],
+        'and': lambda args: (args[0] * args[1]).astype(bool) if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] and args[1],
+        'or': lambda args: (args[0] + args[1]).astype(bool) if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] or args[1],
         'not': lambda args: ~args[0] if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else not args[1],
         '+': sum,
         '-': lambda args: args[0] - args[1],
@@ -163,7 +163,8 @@ class DataSource:
     def execute_operation(self, query, df):
         args = [self.execute_select_target(arg, df) for arg in query.args]
         op_func = get_modin_operation(query.op)
-        return op_func(args)
+        result = op_func(args)
+        return result
 
     def execute_column_identifier(self, query, df):
         scope = self.query_scope
@@ -315,7 +316,7 @@ class DataSource:
 
         if query.where:
             index = self.execute_operation(query.where, source_df)
-            source_df = source_df[index]
+            source_df = source_df[index.values]
         group_by = False
 
         if query.group_by is None:
