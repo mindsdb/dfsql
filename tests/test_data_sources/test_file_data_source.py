@@ -295,11 +295,19 @@ class TestDataSource:
 
     def test_select_aggregation_function_no_groupby(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
-        df = pd.DataFrame({'col_sum': [df['passenger_id'].sum()], 'col_avg': [df['passenger_id'].mean()]})
+
+        tdf = pd.DataFrame({'col_sum': [df['passenger_id'].sum()], 'col_avg': [df['passenger_id'].mean()]})
         sql = "SELECT sum(passenger_id) as col_sum, avg(passenger_id) as col_avg FROM titanic"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['col_sum', 'col_avg']
-        values_left = df[['col_sum', 'col_avg']].values
+        values_left = tdf.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+        tdf = pd.DataFrame([[df['passenger_id'].count(), df['passenger_id'].count()]])
+        sql = "SELECT count(passenger_id), count(passenger_id) FROM titanic"
+        query_result = data_source.query(sql)
+        values_left = tdf.values
         values_right = query_result.values
         assert (values_left == values_right).all().all()
 
@@ -332,7 +340,30 @@ class TestDataSource:
         values_right = query_result.values
         assert (values_left == values_right).all().all()
 
+    def test_group_by_columns_select(self, csv_file, data_source):
+        df = pd.read_csv(csv_file)
+        df = df.groupby(['survived', 'p_class']).agg({'passenger_id': 'count'}).reset_index()
+        df.columns = ['survived', 'p_class', 'count_passenger_id']
 
+        sql = "SELECT survived, p_class, count(passenger_id) as count_passenger_id FROM titanic GROUP BY survived, p_class"
+        query_result = data_source.query(sql)
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+        values_left = df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+        sql = "SELECT p_class, count(passenger_id) FROM titanic GROUP BY survived, p_class"
+        query_result = data_source.query(sql)
+        values_left = df.drop(columns=['survived']).values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+        sql = "SELECT count(passenger_id) FROM titanic GROUP BY survived, p_class"
+        query_result = data_source.query(sql)
+        values_left = df.drop(columns=['survived', 'p_class']).values.flatten()
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
 
     def test_inner_join(self, csv_file, data_source):
         df = pd.read_csv(csv_file)

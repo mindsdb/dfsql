@@ -251,6 +251,7 @@ class DataSource:
     def execute_select_groupby_targets(self, targets, source_df, group_by):
         funcs_to_alias = {}
 
+        final_out_column_names = []
         out_column_names = []
         out_columns = []
 
@@ -275,23 +276,28 @@ class DataSource:
                     agg[arg] = [modin_op]
 
                 funcs_to_alias[(arg, modin_op)] = col_name
-
             else:
                 if col_name not in group_by_cols and col_df_name not in group_by_cols:
                     raise QueryExecutionException(f'Column {col_df_name}({col_name}) not found in GROUP BY clause')
+
+            final_out_column_names.append(col_name)
+
         if isinstance(source_df, pd.Series):
             source_df = pd.DataFrame(source_df)
         aggregate_result = source_df.agg(agg)
         for col_index in aggregate_result.reset_index().columns:
             if isinstance(col_index, tuple):
+                if any([ind for ind in col_index[1:]]):
+                    # It's an aggregated thing
+                    continue
                 col_name = col_index[0]
             else:
                 col_name = col_index
-            if col_name in agg or col_name == 'index':
+            if col_name == 'index':
                 continue
 
             out_column_names.append(col_name)
-            out_columns.append(aggregate_result.reset_index()[col_name].values)
+            out_columns.append(aggregate_result.reset_index()[col_index].values)
 
         for col_name in agg:
             for func in agg[col_name]:
@@ -304,7 +310,7 @@ class DataSource:
                 out_columns.append(agg_result)
                 out_column_names.append(alias)
 
-        out_dict = {col: values for col, values in zip(out_column_names, out_columns)}
+        out_dict = {col: values for col, values in zip(out_column_names, out_columns) if col in final_out_column_names}
         out_df = pd.DataFrame(out_dict)
         return out_df
 
