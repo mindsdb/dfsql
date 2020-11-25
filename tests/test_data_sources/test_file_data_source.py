@@ -218,10 +218,11 @@ class TestDataSource:
         df = pd.read_csv(csv_file)
         df['col_sum'] = df['passenger_id'] + df['survived']
         df['col_diff'] = df['passenger_id'] - df['survived']
-        sql = "SELECT passenger_id + survived  as col_sum, passenger_id - survived as col_diff FROM titanic"
+        df = df[['col_sum', 'col_diff']]
+        sql = "SELECT passenger_id + survived as col_sum, passenger_id - survived as col_diff FROM titanic"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['col_sum', 'col_diff']
-        values_left = df[['col_sum', 'col_diff']].values
+        values_left = df.values
         values_right = query_result.values
         assert (values_left == values_right).all().all()
 

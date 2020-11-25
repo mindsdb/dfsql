@@ -1,4 +1,6 @@
 import pytest
+
+from dataskillet.functions import AGGREGATE_FUNCTIONS
 from dataskillet.sql_parser import (parse_sql, Select, Constant, Star, Identifier, BinaryOperation, Function,
                                     OrderBy, Join, InOperation, SQLParsingException, UnaryOperation,
                                     ComparisonPredicate, TypeCast)
@@ -185,7 +187,7 @@ class TestParseSelect:
             parse_sql(query)
 
     def test_unary_operations(self):
-        unary_operations = ['-', 'NOT', ]
+        unary_operations = ['-', 'NOT']
         for op in unary_operations:
             query = f"""SELECT {op} column1"""
             assert str(parse_sql(query)) == query
@@ -231,13 +233,13 @@ class TestParseSelect:
             assert str(parse_sql(query)) == query
             assert str(parse_sql(query)) == str(Select(targets=[ComparisonPredicate(op=op, args_=(Identifier("column1"),))],))
 
-    def test_functions(self):
-        functions = ['max', 'min', 'avg', 'sum']
+    def test_aggregate_functions(self):
+        functions = AGGREGATE_FUNCTIONS
         for op in functions:
-            query = f"""SELECT {op}(column1)"""
+            query = f"""SELECT {op.name}(column1)"""
             assert str(parse_sql(query)) == query
             assert str(parse_sql(query)) == str(
-                Select(targets=[Function(op=op, args_=(Identifier("column1"),))]))
+                Select(targets=[Function(op=op.name, args_=(Identifier("column1"),))]))
 
     def test_cast(self):
         query = f"""SELECT CAST(4 as int64) as result"""

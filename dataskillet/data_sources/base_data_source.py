@@ -4,6 +4,7 @@ import numpy as np
 import json
 
 from dataskillet.exceptions import QueryExecutionException
+from dataskillet.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
 from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
                                     Function,
                                     AggregateFunction, Join, BinaryOperation, TypeCast)
@@ -11,24 +12,14 @@ from dataskillet.table import Table, FileTable
 
 
 def get_modin_operation(sql_op):
-    operations = {
-        'and': lambda args: (args[0] * args[1]).astype(bool) if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] and args[1],
-        'or': lambda args: (args[0] + args[1]).astype(bool) if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] or args[1],
-        'not': lambda args: ~args[0] if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else not args[1],
-        '+': sum,
-        '-': lambda args: args[0] - args[1],
-        '=': lambda args: args[0] == args[1],
-        '!=': lambda args: args[0] != args[1],
-        '>': lambda args: args[0] > args[1],
-        '<': lambda args: args[0] < args[1],
-        'in': lambda args: args[0].isin(list(args[1].values.flatten())) if isinstance(args[0], pd.Series) or isinstance(args[0], pd.DataFrame) else args[0] in args[1],
+    op = OPERATION_MAPPING.get(sql_op.lower())()
+    if not op:
+        raise(QueryExecutionException(f'Unsupported operation: {sql_op}'))
+    return op
 
-        'avg': 'mean',
-        'sum': 'sum',
-        'count': 'count',
-        'count_distinct': 'nunique',
-    }
-    op = operations.get(sql_op.lower())
+
+def get_aggregation_operation(sql_op):
+    op = AGGREGATE_MAPPING.get(sql_op.lower()).string_or_callable()
     if not op:
         raise(QueryExecutionException(f'Unsupported operation: {sql_op}'))
     return op
@@ -165,7 +156,7 @@ class DataSource:
     def execute_operation(self, query, df):
         args = [self.execute_select_target(arg, df) for arg in query.args]
         op_func = get_modin_operation(query.op)
-        result = op_func(args)
+        result = op_func(*args)
         return result
 
     def execute_column_identifier(self, query, df):
@@ -269,7 +260,7 @@ class DataSource:
                 arg = target.args[0]
                 assert isinstance(arg, Identifier)
                 arg = arg.value
-                modin_op = get_modin_operation(target.op)
+                modin_op = get_aggregation_operation(target.op)
                 if agg.get(arg):
                     agg[arg].append(modin_op)
                 else:

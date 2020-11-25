@@ -1,8 +1,9 @@
+from dataskillet.functions import AGGREGATE_MAPPING
 from dataskillet.sql_parser.select import Select
 from dataskillet.sql_parser.constant import Constant
 from dataskillet.sql_parser.expression import Expression, Star
 from dataskillet.sql_parser.identifier import Identifier
-from dataskillet.sql_parser.operation import Operation, BinaryOperation, Function, AggregateFunction, AGGREGATE_FUNCTIONS, LOOKUP_BOOL_OPERATION, \
+from dataskillet.sql_parser.operation import Operation, BinaryOperation, Function, AggregateFunction, LOOKUP_BOOL_OPERATION, \
     InOperation, UnaryOperation, operation_factory, LOOKUP_NULL_TEST, ComparisonPredicate, LOOKUP_BOOL_TEST
 from dataskillet.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
 from dataskillet.sql_parser.join import Join, LOOKUP_JOIN_TYPE
@@ -70,7 +71,7 @@ def parse_func_call(stmt):
     if stmt.get('agg_distinct'):
         op += '_distinct'
     class_ = Function
-    if op in AGGREGATE_FUNCTIONS:
+    if op in AGGREGATE_MAPPING:
         class_ = AggregateFunction
     args = [parse_statement(arg) for arg in stmt['args']]
     return class_(op=op,

@@ -1,28 +1,7 @@
+from dataskillet.functions import OPERATION_MAPPING, AGGREGATE_MAPPING, is_supported
 from dataskillet.sql_parser.base import Statement
 from dataskillet.exceptions import SQLParsingException
 
-AGGREGATE_FUNCTIONS = (
-    'sum', 'count', 'count_distinct', 'avg',
-)
-
-OPERATIONS = (
-              # Math operators
-              '=', '<>', '!=', '<', '>', '>=', '<=',
-              '+', '-', '*', '/', '%', '^',
-
-              # Boolean
-              'NOT', 'OR', 'AND', 'IN',
-
-              # Functions
-              'max', 'min', 'sum', 'avg',
-
-              # Comparison predicates
-              'IS TRUE', 'IS FALSE',
-              'IS NULL', 'IS NOT NULL',
-
-              # Aggregations
-              *AGGREGATE_FUNCTIONS
-              )
 
 LOOKUP_BOOL_OPERATION = {
     0: 'AND',
@@ -45,7 +24,7 @@ class Operation(Statement):
     def __init__(self, op, args_, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if op not in OPERATIONS:
+        if not is_supported(op):
             raise SQLParsingException(f'Unknown operation {op}')
         self.op = op
         self.args = args_
