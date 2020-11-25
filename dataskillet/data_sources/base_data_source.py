@@ -371,12 +371,12 @@ class DataSource:
             offset = self.execute_query(query.offset)
             out_df = out_df.iloc[offset:, :]
 
+        if query.order_by:
+            out_df = self.execute_order_by(query.order_by, out_df)
+
         if query.limit:
             limit = self.execute_query(query.limit)
             out_df = out_df.iloc[:limit, :]
-
-        if query.order_by:
-            out_df = self.execute_order_by(query.order_by, out_df)
 
         self.clear_query_scope()
         if out_df.shape == (1, 1): # Just one value returned

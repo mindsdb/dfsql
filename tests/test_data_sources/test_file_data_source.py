@@ -574,4 +574,11 @@ class TestDataSource:
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
 
+        out_df = df.groupby(['Category']).agg({'App': 'count'}).reset_index()
+        out_df.columns = ['category', 'count_app']
+        out_df = out_df.sort_values(by=['count_app'], ascending=[False])[:10]
+        sql = "SELECT category, count(app) as count_app FROM googleplaystore GROUP BY category ORDER BY count_app DESC LIMIT 10"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+
 
