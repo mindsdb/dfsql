@@ -6,7 +6,7 @@ from dataskillet.sql_parser.operation import Operation, BinaryOperation, Functio
     InOperation, UnaryOperation, operation_factory, LOOKUP_NULL_TEST, ComparisonPredicate, LOOKUP_BOOL_TEST
 from dataskillet.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
 from dataskillet.sql_parser.join import Join, LOOKUP_JOIN_TYPE
-from dataskillet.sql_parser.exceptions import SQLParsingException
+from dataskillet.exceptions import SQLParsingException
 from dataskillet.commands import command_types
 
 

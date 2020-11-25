@@ -5,6 +5,7 @@ import numpy as np
 import os
 import json
 
+from dataskillet.exceptions import QueryExecutionException
 from dataskillet.table import Table
 
 
@@ -55,9 +56,9 @@ class TestDataSource:
         assert json_data['titanic']['preprocessing_dict']
         assert json_data['titanic']['fpath'] == str(csv_file)
 
-        with pytest.raises(Exception):
+        with pytest.raises(QueryExecutionException):
             # Can't implicitly overwrite table metadata
-            DataSource(metadata_dir=csv_file.dirpath(), tables=Table())
+            DataSource(metadata_dir=csv_file.dirpath(), tables=[Table(name='titanic')])
 
         # Metadata is loaded if a data source is created from the same dir
         ds2 = DataSource(metadata_dir=csv_file.dirpath())
@@ -106,6 +107,9 @@ class TestDataSource:
         sql = "SELECT 1 as result"
         assert data_source.query(sql) == 1
 
+        sql = "SELECT 1"
+        assert data_source.query(sql) == 1
+
     def test_create_table(self, csv_file):
         ds = DataSource(metadata_dir=csv_file.dirpath())
         assert not ds.tables and len(ds.tables) == 0
@@ -121,7 +125,7 @@ class TestDataSource:
         assert data_source.tables['titanic']
 
         sql = f"CREATE TABLE ('{str(csv_file)}', True)"
-        with pytest.raises(Exception):
+        with pytest.raises(QueryExecutionException):
             query_result = data_source.query(sql)
 
     def test_drop_table(self, data_source):
@@ -286,7 +290,7 @@ class TestDataSource:
 
     def test_select_groupby_wrong_column(self, csv_file, data_source):
         sql = "SELECT survived, p_class, count(passenger_id) as count_passenger_id FROM titanic GROUP BY survived"
-        with pytest.raises(Exception):
+        with pytest.raises(QueryExecutionException):
             query_result = data_source.query(sql)
 
     def test_select_aggregation_function_no_groupby(self, csv_file, data_source):
@@ -315,6 +319,20 @@ class TestDataSource:
         values_left = df.values
         values_right = query_result.values
         assert (values_left == values_right).all().all()
+
+        # Same, but no alias
+        sql = "SELECT survived, p_class, count(passenger_id) FROM titanic GROUP BY survived, p_class HAVING survived = 1"
+        query_result = data_source.query(sql)
+        df.columns = ['survived', 'p_class', 'count(passenger_id)']
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+
+        assert (query_result.survived == 1).all()
+        values_left = df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+
 
     def test_inner_join(self, csv_file, data_source):
         df = pd.read_csv(csv_file)

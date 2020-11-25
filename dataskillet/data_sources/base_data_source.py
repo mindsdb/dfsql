@@ -2,6 +2,8 @@ import os
 import modin.pandas as pd
 import numpy as np
 import json
+
+from dataskillet.exceptions import QueryExecutionException
 from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
                                     Function,
                                     AggregateFunction, Join, BinaryOperation, TypeCast)
@@ -28,7 +30,7 @@ def get_modin_operation(sql_op):
     }
     op = operations.get(sql_op.lower())
     if not op:
-        raise(Exception(f'Unsupported operation: {sql_op}'))
+        raise(QueryExecutionException(f'Unsupported operation: {sql_op}'))
     return op
 
 
@@ -47,7 +49,7 @@ class DataSource:
         self.load_metadata()
 
         if self.tables and tables:
-            raise Exception(f'Table metadata already exists in directory {metadata_dir}, but tables also passed to DataSource constructor. '
+            raise QueryExecutionException(f'Table metadata already exists in directory {metadata_dir}, but tables also passed to DataSource constructor. '
                             f'\nEither load the previous metadata by omitting the tables argument, or explicitly overwrite old metadata by using DataSource.create_new(metadata_dir, tables).')
 
         if not self.tables:
@@ -88,7 +90,7 @@ class DataSource:
                 ds.add_table_from_file(fpath)
 
         if not ds.tables:
-            raise(Exception(f'Directory {files_dir_path} does not contain any spreadsheet files'))
+            raise(QueryExecutionException(f'Directory {files_dir_path} does not contain any spreadsheet files'))
         return ds
 
     def load_metadata(self):
@@ -109,14 +111,14 @@ class DataSource:
             os.makedirs(self.metadata_dir)
 
         if not os.access(self.metadata_dir, os.W_OK):
-            raise Exception(f'Directory {self.metadata_dir} not writable')
+            raise QueryExecutionException(f'Directory {self.metadata_dir} not writable')
 
         tables_dump = {
             tname: table.to_json() for tname, table in self.tables.items()
         }
 
         if not overwrite and os.path.exists(os.path.join(self.metadata_dir, 'datasource_tables.json')):
-            raise Exception('Table metadata already exists, but overwrite is False.')
+            raise QueryExecutionException('Table metadata already exists, but overwrite is False.')
 
         with open(os.path.join(self.metadata_dir, 'datasource_tables.json'), 'w') as f:
             f.write(json.dumps(tables_dump))
@@ -126,7 +128,7 @@ class DataSource:
 
     def add_table(self, table):
         if self.tables.get(table.name):
-            raise Exception(f'Table {table.name} already exists in data source, use DROP TABLE to remove it if you want to recreate it.')
+            raise QueryExecutionException(f'Table {table.name} already exists in data source, use DROP TABLE to remove it if you want to recreate it.')
         self.tables[table.name] = table
         self.save_metadata()
 
@@ -148,7 +150,7 @@ class DataSource:
     def execute_table_identifier(self, query):
         table_name = query.value
         if table_name not in self:
-            raise(Exception(f'Unknown table {table_name}'))
+            raise(QueryExecutionException(f'Unknown table {table_name}'))
         else:
             df = self.tables[table_name].dataframe
             scope = self.query_scope
@@ -176,11 +178,11 @@ class DataSource:
         if len(full_column_name.split('.')) > 1:
             table_name, column_name = full_column_name.split('.')
             if table_name and not table_name in scope:
-                raise Exception(f"Table name {table_name} not in scope.")
+                raise QueryExecutionException(f"Table name {table_name} not in scope.")
 
             if column_name in df.columns:
                 return df[column_name]
-        raise Exception(f"Column {full_column_name} not found.")
+        raise QueryExecutionException(f"Column {full_column_name} not found.")
 
     def execute_type_cast(self, query, df):
         type_name = query.type_name
@@ -196,6 +198,15 @@ class DataSource:
             return self.execute_type_cast(query, df)
 
         return self.execute_query(query)
+
+    def resolve_select_target_col_name(self, target):
+        col_name = target.alias
+        if not col_name:
+            if isinstance(target, Identifier):
+                col_name = target.value
+            else:
+                col_name = str(target)
+        return col_name
 
     def execute_select_targets(self, targets, source_df):
         out_df = pd.DataFrame()
@@ -215,13 +226,9 @@ class DataSource:
                 break
 
         for target in targets:
-            col_name = target.alias if target.alias else target.value
-            if isinstance(target, Identifier):
-                out_names.append(col_name)
-            else:
-                if not target.alias:
-                    raise (Exception(f'Alias required for {target}'))
-                out_names.append(target.alias)
+            col_name = self.resolve_select_target_col_name(target)
+            out_names.append(col_name)
+
             select_target_result = self.execute_select_target(target, source_df)
             if isinstance(select_target_result, pd.Series):
                 iterable_names.append(col_name)
@@ -252,13 +259,10 @@ class DataSource:
         group_by_cols = [q.value for q in group_by if q.value != True]
         for target in targets:
             col_df_name = target.alias
-            col_name = target.alias
+            col_name = self.resolve_select_target_col_name(target)
+
             if isinstance(target, Identifier):
                 col_df_name = target.value
-                col_name = target.alias if target.alias else target.value
-
-            elif not target.alias:
-                raise (Exception(f'Alias required for {target}'))
 
             if isinstance(target, Function):
                 arg = target.args[0]
@@ -274,7 +278,7 @@ class DataSource:
 
             else:
                 if col_name not in group_by_cols and col_df_name not in group_by_cols:
-                    raise Exception(f'Column {col_df_name}({col_name}) not found in GROUP BY clause')
+                    raise QueryExecutionException(f'Column {col_df_name}({col_name}) not found in GROUP BY clause')
         if isinstance(source_df, pd.Series):
             source_df = pd.DataFrame(source_df)
         aggregate_result = source_df.agg(agg)
@@ -316,7 +320,7 @@ class DataSource:
             from_table = [self.execute_from_query(sub_q) for sub_q in query.from_table]
 
         if len(from_table) != 1:
-            raise(Exception(f'No idea how to deal with from_table len {len(from_table)}'))
+            raise(QueryExecutionException(f'No idea how to deal with from_table len {len(from_table)}'))
 
         source_df = from_table[0]
 
@@ -338,7 +342,7 @@ class DataSource:
             if not non_agg_functions and agg_functions:
                 query.group_by = [Constant(True)]
             elif non_agg_functions and agg_functions:
-                raise(Exception(f'Can\'t process a mix of aggregation functions and non-aggregation functions with no GROUP BY clause.'))
+                raise(QueryExecutionException(f'Can\'t process a mix of aggregation functions and non-aggregation functions with no GROUP BY clause.'))
         if query.group_by:
             group_by = True
             source_df = self.execute_groupby_queries(query.group_by, source_df)
@@ -350,7 +354,7 @@ class DataSource:
 
         if query.having:
             if group_by == False:
-                raise Exception('Can\'t execute HAVING clause with no GROUP BY clause.')
+                raise QueryExecutionException('Can\'t execute HAVING clause with no GROUP BY clause.')
             index = self.execute_operation(query.having, out_df)
             out_df = out_df[index]
 
@@ -396,7 +400,7 @@ class DataSource:
             left_on = condition.args[0]
             right_on = condition.args[1]
         else:
-            raise Exception(f'Invalid join condition {condition.op}')
+            raise QueryExecutionException(f'Invalid join condition {condition.op}')
         left_name = query.left.alias if query.left.alias else query.left.value
         right_name = query.right.alias if query.right.alias else query.right.value
         left_on, right_on = left_on if left_on.value.split('.')[0] in left_name else right_on, \
@@ -438,7 +442,7 @@ class DataSource:
             if isinstance(query, Identifier):
                 col_names.append(self.execute_column_identifier(query, df))
             else:
-                raise Exception(f"Don't know how to aggregate by {str(query)}")
+                raise QueryExecutionException(f"Don't know how to aggregate by {str(query)}")
         return df.groupby(col_names)
 
     def execute_query(self, query):
@@ -447,4 +451,4 @@ class DataSource:
         elif isinstance(query, Constant):
             return self.execute_constant(query)
         else:
-            raise (Exception(f'No idea how to execute query statement {type(query)}'))
+            raise (QueryExecutionException(f'No idea how to execute query statement {type(query)}'))

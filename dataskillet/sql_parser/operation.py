@@ -1,5 +1,5 @@
 from dataskillet.sql_parser.base import Statement
-from dataskillet.sql_parser.exceptions import SQLParsingException
+from dataskillet.exceptions import SQLParsingException
 
 AGGREGATE_FUNCTIONS = (
     'sum', 'count', 'count_distinct', 'avg',

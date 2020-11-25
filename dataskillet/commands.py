@@ -1,9 +1,6 @@
 import modin.pandas as pd
 import re
-
-
-class CommandException(Exception):
-    pass
+from dataskillet.exceptions import CommandException
 
 
 class Command:

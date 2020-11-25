@@ -1,2 +1,0 @@
-class SQLParsingException(Exception):
-    pass
