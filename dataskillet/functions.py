@@ -1,53 +1,20 @@
 import re
-
 import modin.pandas as pd
 from pandas._testing import isiterable
 
-from dataskillet.exceptions import QueryExecutionException
-
-
-def is_modin(thing):
-    return (isinstance(thing, pd.Series) or isinstance(thing, pd.DataFrame))
-
-
-def raise_bad_inputs(func):
-    raise QueryExecutionException(f'Invalid inputs for function {func.name}')
-
-
-def raise_bad_outputs(func):
-    raise QueryExecutionException(f'Invalid outputs produced by function {func.name}')
-
-
-def is_booly(thing):
-    if ((is_modin(thing))
-        or isinstance(thing, bool)
-        or (int(thing) in (0, 1))):
-        return True
-    return False
-
-
-def is_numeric(thing):
-    if ((is_modin(thing) and thing.dtype.name != 'object')
-        or isinstance(thing, int) or isinstance(thing, float)):
-        return True
-    return False
-
-
-def is_stringy(thing):
-    if ((is_modin(thing) and thing.dtype.name in ('string', 'object'))
-        or isinstance(thing, str)):
-        return True
-    return False
+from dataskillet.utils import (is_modin, is_numeric, is_booly, is_stringy, raise_bad_inputs, raise_bad_outputs,
+                               TwoArgsMixin, OneArgMixin, StringInputMixin, NumericInputMixin, BoolInputMixin,
+                               BoolOutputMixin, StringOutputMixin, NumericOutputMixin)
 
 
 class BaseFunction:
     name = None
 
     def assert_args(self, args):
-        pass
+        super().assert_args(args)
 
     def assert_output(self, out):
-        pass
+        super().assert_output(out)
 
     def get_output(self, args):
         return None
@@ -58,44 +25,13 @@ class BaseFunction:
         self.assert_output(output)
         return output
 
+# Explanation on how this function definition works:
+# https://stackoverflow.com/a/40187463/1571481
 
-class TwoArgsFunction(BaseFunction):
-    def assert_args(self, args):
-        if len(args) != 2:
-            raise_bad_inputs(self)
-
-
-class OneArgFunction(BaseFunction):
-    def assert_args(self, args):
-        if len(args) != 1:
-            raise_bad_inputs(self)
+# Boolean functions
 
 
-class BoolInputMixin:
-    def assert_args(self, args):
-        if not all([is_booly(arg) for arg in args]):
-            raise_bad_inputs(self)
-
-
-class BoolOutputMixin:
-    def assert_output(self, output):
-        if not is_booly(output):
-            raise_bad_outputs(self)
-
-
-class NumericInputMixin:
-    def assert_args(self, args):
-        if not all([is_numeric(arg) for arg in args]):
-            raise_bad_inputs(self)
-
-
-class NumericOutputMixin:
-    def assert_output(self, output):
-        if not is_numeric(output):
-            raise_bad_outputs(self)
-
-
-class And(TwoArgsFunction, BoolInputMixin, BoolOutputMixin):
+class And(BaseFunction, TwoArgsMixin, BoolInputMixin, BoolOutputMixin):
     name = 'and'
 
     def get_output(self, args):
@@ -104,7 +40,7 @@ class And(TwoArgsFunction, BoolInputMixin, BoolOutputMixin):
         return args[0] and args[1]
 
 
-class Or(TwoArgsFunction, BoolInputMixin, BoolOutputMixin):
+class Or(BaseFunction, TwoArgsMixin, BoolInputMixin, BoolOutputMixin):
     name = 'or'
 
     def get_output(self, args):
@@ -131,11 +67,100 @@ class Not(BaseFunction, BoolOutputMixin):
         return not args[0]
 
 
-class Plus(TwoArgsFunction, NumericInputMixin, NumericOutputMixin):
+class Equals(BaseFunction, TwoArgsMixin, BoolOutputMixin):
+    name = '='
+
+    def get_output(self, args):
+        return args[0] == args[1]
+
+
+class NotEquals(BaseFunction, TwoArgsMixin, BoolOutputMixin):
+    name = '!='
+
+    def get_output(self, args):
+        return args[0] != args[1]
+
+
+class Greater(BaseFunction, TwoArgsMixin, BoolOutputMixin):
+    name = '>'
+
+    def get_output(self, args):
+        return args[0] > args[1]
+
+
+class GreaterEqual(BaseFunction, TwoArgsMixin, BoolOutputMixin):
+    name = '>='
+
+    def get_output(self, args):
+        return args[0] >= args[1]
+
+
+class Less(BaseFunction, TwoArgsMixin, BoolOutputMixin):
+    name = '<'
+
+    def get_output(self, args):
+        return args[0] < args[1]
+
+
+class LessEqual(BaseFunction, TwoArgsMixin, BoolOutputMixin):
+    name = '<='
+
+    def get_output(self, args):
+        return args[0] <= args[1]
+
+
+class In(BaseFunction, BoolOutputMixin):
+    name = 'in'
+
+    def assert_args(self, args):
+        if not isiterable(args[1]):
+            raise_bad_inputs(self)
+
+    def get_output(self, args):
+        if is_modin(args[0]):
+            return args[0].isin(args[1].values)
+        return args[0] in args[1]
+
+
+class IsNull(BaseFunction, OneArgMixin, BoolOutputMixin):
+    name = 'is null'
+
+    def get_output(self, args):
+        return pd.isnull(args[0])
+
+
+class IsNotNull(BaseFunction, OneArgMixin, BoolOutputMixin):
+    name = 'is not null'
+
+    def get_output(self, args):
+        return ~pd.isnull(args[0])
+
+
+class IsTrue(BaseFunction, OneArgMixin, BoolOutputMixin):
+    name = 'is true'
+
+    def get_output(self, args):
+        if is_modin(args[0]):
+            return args[0] == True
+        return args[0] is True
+
+
+class IsFalse(BaseFunction, OneArgMixin, BoolOutputMixin):
+    name = 'is false'
+
+    def get_output(self, args):
+        if is_modin(args[0]):
+            return args[0] == False
+        return args[0] is False
+
+# Arithmetic functions
+
+
+class Plus(BaseFunction, TwoArgsMixin, NumericInputMixin, NumericOutputMixin):
     name = '+'
 
     def get_output(self, args):
-        return args[0] + args[1]
+        return pd.to_numeric(args[0] + args[1])
 
 
 class Minus(BaseFunction, NumericOutputMixin):
@@ -156,146 +181,48 @@ class Minus(BaseFunction, NumericOutputMixin):
 
     def get_output(self, args):
         if len(args) == 1:
-            return -args[0]
-        return args[0] - args[1]
+            return pd.to_numeric(-args[0])
+        return pd.to_numeric(args[0] - args[1])
 
 
-class Multiply(TwoArgsFunction, NumericInputMixin, NumericOutputMixin):
+class Multiply(BaseFunction, TwoArgsMixin, NumericInputMixin, NumericOutputMixin):
     name = '*'
 
     def get_output(self, args):
-        return args[0] * args[1]
+        return pd.to_numeric(args[0] * args[1])
 
 
-class Divide(TwoArgsFunction, NumericInputMixin, NumericOutputMixin):
+class Divide(BaseFunction, TwoArgsMixin, NumericInputMixin, NumericOutputMixin):
     name = '/'
 
     def get_output(self, args):
-        return args[0] / args[1]
+        return pd.to_numeric(args[0] / args[1])
 
 
-class Modulo(TwoArgsFunction, NumericInputMixin, NumericOutputMixin):
+class Modulo(BaseFunction, TwoArgsMixin, NumericInputMixin, NumericOutputMixin):
     name = '%'
 
     def get_output(self, args):
-        return args[0] % args[1]
+        return pd.to_numeric(args[0] % args[1])
 
 
-class Power(TwoArgsFunction, NumericInputMixin, NumericOutputMixin):
+class Power(BaseFunction, TwoArgsMixin, NumericInputMixin, NumericOutputMixin):
     name = '^'
 
     def get_output(self, args):
-        return args[0] ** args[1]
-
-
-class Equals(TwoArgsFunction, BoolOutputMixin):
-    name = '='
-
-    def get_output(self, args):
-        return args[0] == args[1]
-
-
-class NotEquals(TwoArgsFunction, BoolOutputMixin):
-    name = '!='
-
-    def get_output(self, args):
-        return args[0] != args[1]
-
-
-class Greater(TwoArgsFunction, BoolOutputMixin):
-    name = '>'
-
-    def get_output(self, args):
-        return args[0] > args[1]
-
-
-class GreaterEqual(TwoArgsFunction, BoolOutputMixin):
-    name = '>='
-
-    def get_output(self, args):
-        return args[0] >= args[1]
-
-
-class Less(TwoArgsFunction, BoolOutputMixin):
-    name = '<'
-
-    def get_output(self, args):
-        return args[0] < args[1]
-
-
-class LessEqual(TwoArgsFunction, BoolOutputMixin):
-    name = '<='
-
-    def get_output(self, args):
-        return args[0] <= args[1]
-
-
-class In(BaseFunction, BoolOutputMixin):
-    name = 'in'
-
-    def assert_args(self, args):
-        if not isiterable(args[1]):
-            raise_bad_inputs(self)
-
-    def get_output(self, args):
-        if is_modin(args[0]):
-            return args[0].isin(args[1].values)
-        return args[0] in args[1]
-
-
-class IsNull(OneArgFunction, BoolOutputMixin):
-    name = 'is null'
-
-    def get_output(self, args):
-        return pd.isnull(args[0])
-
-
-class IsNotNull(OneArgFunction, BoolOutputMixin):
-    name = 'is not null'
-
-    def get_output(self, args):
-        return ~pd.isnull(args[0])
-
-
-class IsTrue(OneArgFunction, BoolOutputMixin):
-    name = 'is true'
-
-    def get_output(self, args):
-        if is_modin(args[0]):
-            return args[0] == True
-        return args[0] is True
-
-
-class IsFalse(OneArgFunction, BoolOutputMixin):
-    name = 'is false'
-
-    def get_output(self, args):
-        if is_modin(args[0]):
-            return args[0] == False
-        return args[0] is False
+        return pd.to_numeric(args[0] ** args[1])
 
 # String functions
 
-class StringInputMixin:
-    def assert_args(self, args):
-        if not all([is_stringy(arg) for arg in args]):
-            raise_bad_inputs(self)
 
-
-class StringOutputMixin:
-    def assert_output(self, output):
-        if not is_stringy(output):
-            raise_bad_outputs(self)
-
-
-class StringConcat(TwoArgsFunction, StringInputMixin, StringOutputMixin):
+class StringConcat(BaseFunction, TwoArgsMixin, StringInputMixin, StringOutputMixin):
     name = "||"
 
     def get_output(self, args):
         return args[0] + args[1]
 
 
-class StringLower(OneArgFunction, StringInputMixin, StringOutputMixin):
+class StringLower(BaseFunction, OneArgMixin, StringInputMixin, StringOutputMixin):
     name = "lower"
 
     def get_output(self, args):
@@ -304,7 +231,7 @@ class StringLower(OneArgFunction, StringInputMixin, StringOutputMixin):
         return args[0].apply(lambda x: x.lower())
 
 
-class StringUpper(OneArgFunction, StringInputMixin, StringOutputMixin):
+class StringUpper(BaseFunction, OneArgMixin, StringInputMixin, StringOutputMixin):
     name = "upper"
 
     def get_output(self, args):
@@ -313,7 +240,7 @@ class StringUpper(OneArgFunction, StringInputMixin, StringOutputMixin):
         return args[0].apply(lambda x: x.upper())
 
 
-class Like(TwoArgsFunction, StringInputMixin, StringOutputMixin):
+class Like(BaseFunction, TwoArgsMixin, StringInputMixin, BoolOutputMixin):
     name = "~~"
 
     def get_output(self, args):
@@ -324,6 +251,8 @@ class Like(TwoArgsFunction, StringInputMixin, StringOutputMixin):
         if is_modin(args[0]):
             return args[0].apply(matcher, args=(args[1],))
         return matcher(args[0], args[1])
+
+# Aggregate functions
 
 
 class AggregateFunction(BaseFunction):
@@ -356,9 +285,6 @@ class CountDistinct(AggregateFunction):
     string_repr = 'nunique'
 
 
-AGGREGATE_FUNCTIONS = (
-    Sum, Mean, Count, CountDistinct,
-)
 
 OPERATIONS = (
     And, Or, Not,
@@ -374,16 +300,18 @@ OPERATIONS = (
     IsNull, IsNotNull, IsTrue, IsFalse
 )
 
-AGGREGATE_MAPPING = {
-    op.name: op for op in AGGREGATE_FUNCTIONS
-}
-
-
 OPERATION_MAPPING = {
     op.name: op for op in OPERATIONS
 }
 OPERATION_MAPPING['<>'] = Equals
 
+AGGREGATE_FUNCTIONS = (
+    Sum, Mean, Count, CountDistinct,
+)
+
+AGGREGATE_MAPPING = {
+    op.name: op for op in AGGREGATE_FUNCTIONS
+}
 
 def is_supported(op_name):
     return op_name.lower() in OPERATION_MAPPING or op_name.lower() in AGGREGATE_MAPPING
