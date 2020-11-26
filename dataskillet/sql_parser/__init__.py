@@ -1,4 +1,5 @@
 from dataskillet.functions import AGGREGATE_MAPPING
+from dataskillet.sql_parser.list_ import List
 from dataskillet.sql_parser.select import Select
 from dataskillet.sql_parser.constant import Constant
 from dataskillet.sql_parser.expression import Expression, Star
@@ -31,6 +32,8 @@ def parse_constant(stmt):
 
 def parse_expression(stmt):
     op = stmt['name'][0]['String']['str']
+    if stmt['kind'] == 7:
+        op = 'IN'
     args = []
     if stmt.get('lexpr'):
         left_stmt = stmt['lexpr']
@@ -134,30 +137,38 @@ def parse_typecast(stmt):
     return TypeCast(type_name=type_name, arg=arg, raw=stmt)
 
 
+def parse_list(stmt):
+    return List(tuple([parse_statement(item) for item in stmt]), raw=stmt)
+
+
 def parse_statement(stmt):
-    target_type = next(iter(stmt.keys()))
-    if target_type == 'A_Const':
-        return parse_constant(stmt['A_Const'])
-    elif target_type == 'A_Expr':
-        return parse_expression(stmt['A_Expr'])
-    elif target_type == 'BoolExpr':
-        return parse_bool_expr(stmt['BoolExpr'])
-    elif target_type == 'ColumnRef':
-        return parse_column_ref(stmt['ColumnRef'])
-    elif target_type == 'RangeVar':
-        return parse_rangevar(stmt['RangeVar'])
-    elif target_type == 'FuncCall':
-        return parse_func_call(stmt['FuncCall'])
-    elif target_type == 'SubLink':
-        return parse_sublink(stmt['SubLink'])
-    elif target_type == 'NullTest':
-        return parse_nulltest(stmt['NullTest'])
-    elif target_type == 'BooleanTest':
-        return parse_booltest(stmt['BooleanTest'])
-    elif target_type == 'TypeCast':
-        return parse_typecast(stmt['TypeCast'])
-    else:
-        raise SQLParsingException(f'No idea how to parse {str(stmt)}')
+    if isinstance(stmt, list):
+        return parse_list(stmt)
+
+    if isinstance(stmt, dict):
+        target_type = next(iter(stmt.keys()))
+        if target_type == 'A_Const':
+            return parse_constant(stmt['A_Const'])
+        elif target_type == 'A_Expr':
+            return parse_expression(stmt['A_Expr'])
+        elif target_type == 'BoolExpr':
+            return parse_bool_expr(stmt['BoolExpr'])
+        elif target_type == 'ColumnRef':
+            return parse_column_ref(stmt['ColumnRef'])
+        elif target_type == 'RangeVar':
+            return parse_rangevar(stmt['RangeVar'])
+        elif target_type == 'FuncCall':
+            return parse_func_call(stmt['FuncCall'])
+        elif target_type == 'SubLink':
+            return parse_sublink(stmt['SubLink'])
+        elif target_type == 'NullTest':
+            return parse_nulltest(stmt['NullTest'])
+        elif target_type == 'BooleanTest':
+            return parse_booltest(stmt['BooleanTest'])
+        elif target_type == 'TypeCast':
+            return parse_typecast(stmt['TypeCast'])
+
+    raise SQLParsingException(f'No idea how to parse {str(stmt)}')
 
 
 def parse_order_by(stmt):
@@ -209,7 +220,7 @@ def parse_from_clause(stmt):
 
 def parse_select_statement(select_stmt):
     select_stmt = select_stmt['SelectStmt']
-    #print(select_stmt)
+
     targets = []
     for target in select_stmt['targetList']:
         targets.append(parse_target(target['ResTarget']))

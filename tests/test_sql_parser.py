@@ -4,6 +4,7 @@ from dataskillet.functions import AGGREGATE_FUNCTIONS
 from dataskillet.sql_parser import (parse_sql, Select, Constant, Star, Identifier, BinaryOperation, Function,
                                     OrderBy, Join, InOperation, SQLParsingException, UnaryOperation,
                                     ComparisonPredicate, TypeCast)
+from dataskillet.sql_parser.list_ import List
 
 
 class TestParseSelect:
@@ -246,3 +247,13 @@ class TestParseSelect:
 
         assert str(parse_sql(query)) == str(
                 Select(targets=[TypeCast(type_name='int64', arg=Constant(4), alias='result')]))
+
+    def test_lists(self):
+        query = "SELECT col FROM tab WHERE col IN (1, 2)"
+
+        assert str(parse_sql(query)) == str(Select(targets=[Identifier('col')],
+                                                   from_table=[Identifier('tab')],
+                                                   where=InOperation(args_=(
+                                                       Identifier('col'),
+                                                       List(items=[Constant(1), Constant(2)])
+                                                   ))))

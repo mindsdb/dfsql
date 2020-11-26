@@ -7,7 +7,7 @@ from dataskillet.exceptions import QueryExecutionException
 from dataskillet.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
 from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
                                     Function,
-                                    AggregateFunction, Join, BinaryOperation, TypeCast)
+                                    AggregateFunction, Join, BinaryOperation, TypeCast, List)
 from dataskillet.table import Table, FileTable
 
 
@@ -447,5 +447,7 @@ class DataSource:
             return self.execute_select(query)
         elif isinstance(query, Constant):
             return self.execute_constant(query)
+        elif isinstance(query, List):
+            return pd.Series([self.execute_query(item) for item in query.items])
         else:
             raise (QueryExecutionException(f'No idea how to execute query statement {type(query)}'))

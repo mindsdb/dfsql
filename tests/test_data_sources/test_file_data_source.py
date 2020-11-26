@@ -587,14 +587,29 @@ class TestDataSource:
         query_result = data_source.query(sql)
         assert query_result == 'ab'
 
+        sql = "SELECT 'b' || 'a'"
+        query_result = data_source.query(sql)
+        assert query_result == 'ba'
+
         df = pd.read_csv(csv_file)
         out_series = df['name'] + df['embarked']
         sql = "SELECT name || embarked FROM titanic"
         query_result = data_source.query(sql)
         assert (query_result.values == out_series.values).all()
 
+        df = pd.read_csv(csv_file)
+        out_series = df['embarked'] + df['name']
+        sql = "SELECT embarked || name FROM titanic"
+        query_result = data_source.query(sql)
+        assert (query_result.values == out_series.values).all()
+
         out_series = df['name'] + 'a'
         sql = "SELECT name || 'a' FROM titanic"
+        query_result = data_source.query(sql)
+        assert (query_result.values == out_series.values).all()
+
+        out_series = 'a' + df['name']
+        sql = "SELECT 'a' || name FROM titanic"
         query_result = data_source.query(sql)
         assert (query_result.values == out_series.values).all()
 
@@ -631,3 +646,8 @@ class TestDataSource:
         sql = "SELECT name FROM titanic WHERE name LIKE '.*Owen.*'"
         query_result = data_source.query(sql)
         assert  query_result == 'Braund, Mr. Owen Harris'
+
+    def test_in(self, data_source, csv_file):
+        sql = "SELECT name FROM titanic WHERE name IN ('Braund, Mr. Owen Harris', 'Cumings, Mrs. John Bradley (Florence Briggs Thayer)')"
+        query_result = data_source.query(sql)
+        assert (query_result.values == np.array(['Braund, Mr. Owen Harris', 'Cumings, Mrs. John Bradley (Florence Briggs Thayer)'])).all()
