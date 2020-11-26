@@ -81,3 +81,4 @@ class TestFunctionBase:
 
         with pytest.raises(QueryExecutionException):
             And()([pd.Series([False]), 1])
+

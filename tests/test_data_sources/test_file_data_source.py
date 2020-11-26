@@ -582,4 +582,52 @@ class TestDataSource:
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
 
+    def test_string_concat(self, data_source, csv_file):
+        sql = "SELECT 'a' || 'b'"
+        query_result = data_source.query(sql)
+        assert query_result == 'ab'
 
+        df = pd.read_csv(csv_file)
+        out_series = df['name'] + df['embarked']
+        sql = "SELECT name || embarked FROM titanic"
+        query_result = data_source.query(sql)
+        assert (query_result.values == out_series.values).all()
+
+        out_series = df['name'] + 'a'
+        sql = "SELECT name || 'a' FROM titanic"
+        query_result = data_source.query(sql)
+        assert (query_result.values == out_series.values).all()
+
+    def test_string_upper_lower(self, data_source, csv_file):
+        sql = "SELECT upper('a')"
+        query_result = data_source.query(sql)
+        assert query_result == 'A'
+
+        sql = "SELECT lower('A')"
+        query_result = data_source.query(sql)
+        assert query_result == 'a'
+
+        df = pd.read_csv(csv_file)
+        out_series = df['name'].apply(lambda x: x.upper())
+        sql = "SELECT upper(name) FROM titanic"
+        query_result = data_source.query(sql)
+        assert (query_result.values == out_series.values).all()
+
+        out_series = df['name'].apply(lambda x: x.lower())
+        sql = "SELECT lower(name) FROM titanic"
+        query_result = data_source.query(sql)
+        assert (query_result.values == out_series.values).all()
+
+    def test_string_like(self, data_source, csv_file):
+        sql = "SELECT 'a' LIKE '.*' "
+        query_result = data_source.query(sql)
+        assert query_result == True
+
+        df = pd.read_csv(csv_file)
+        sql = "SELECT name FROM titanic WHERE name LIKE '.*'"
+        query_result = data_source.query(sql)
+        assert (query_result.values == df['name'].values).all()
+
+        sql = "SELECT name FROM titanic WHERE name LIKE '.*Owen.*'"
+        query_result = data_source.query(sql)
+        assert  query_result == 'Braund, Mr. Owen Harris'
