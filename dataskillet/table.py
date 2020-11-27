@@ -27,14 +27,13 @@ def preprocess_dataframe(df, rename, empty_rows, drop_columns):
 
 
 class Table:
-    def __init__(self, name, *args, preprocessing_dict=None, **kwargs):
+    def __init__(self, name, *args, preprocessing_dict=None, cache=None, **kwargs):
         self.name = name
         self.preprocessing_dict = preprocessing_dict
+        self.cache = cache
 
-        self._df_cache = None
-
-    def clear_cache(self):
-        self._df_cache = None
+    def __hash__(self):
+        return hash(self.name)
 
     def fetch_dataframe(self):
         pass
@@ -42,13 +41,18 @@ class Table:
     def preprocess_dataframe(self, df):
         return preprocess_dataframe(df, **self.preprocessing_dict)
 
+    def fetch_and_preprocess(self):
+        df = self.fetch_dataframe()
+        if self.preprocessing_dict:
+            df = self.preprocess_dataframe(df)
+        return df
+
     @property
     def dataframe(self):
-        if self._df_cache is None:
-            self._df_cache = self.fetch_dataframe()
-            if self.preprocessing_dict:
-                self._df_cache = self.preprocess_dataframe(self._df_cache)
-        return self._df_cache
+        if self.cache:
+            return self.cache.get(self)
+
+        return self.fetch_and_preprocess()
 
     def to_json(self):
         return dict(

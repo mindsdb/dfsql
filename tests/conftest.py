@@ -3,6 +3,8 @@ import pandas as pd
 import requests
 import os
 
+from dataskillet import DataSource
+
 
 @pytest.fixture()
 def csv_file(tmpdir):
@@ -22,6 +24,12 @@ def csv_file(tmpdir):
     p.write_text(content, encoding='utf-8')
     return p
 
+
+@pytest.fixture()
+def data_source(csv_file, tmpdir):
+    dir_path = csv_file.dirpath()
+    ds = DataSource.from_dir(metadata_dir=str(tmpdir), files_dir_path=dir_path)
+    return ds
 
 @pytest.fixture(scope='session', autouse=True)
 def root_directory(request):

@@ -3,6 +3,7 @@ import modin.pandas as pd
 import numpy as np
 import json
 
+from dataskillet.cache import DoNothingCache, MemoryCache
 from dataskillet.exceptions import QueryExecutionException
 from dataskillet.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
 from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
@@ -32,22 +33,29 @@ def cast_type(obj, type_name):
 
 
 class DataSource:
-    def __init__(self, metadata_dir, tables=None):
+    def __init__(self, metadata_dir, tables=None, cache=None):
         self.metadata_dir = metadata_dir
 
         tables = {t.name.lower(): t for t in tables} if tables else {}
         self.tables = None
-        self.load_metadata()
 
+        self.load_metadata()
         if self.tables and tables:
             raise QueryExecutionException(f'Table metadata already exists in directory {metadata_dir}, but tables also passed to DataSource constructor. '
                             f'\nEither load the previous metadata by omitting the tables argument, or explicitly overwrite old metadata by using DataSource.create_new(metadata_dir, tables).')
-
-        if not self.tables:
+        elif not self.tables:
             self.tables = tables
+
         self.save_metadata()
 
+        self.set_cache(cache or MemoryCache())
+
         self._query_scope = {}
+
+    def set_cache(self, cache):
+        self.cache = cache
+        for tname, table in self.tables.items():
+            table.cache = self.cache
 
     @property
     def query_scope(self):

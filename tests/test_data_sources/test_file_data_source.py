@@ -10,13 +10,6 @@ from dataskillet.table import Table
 
 
 @pytest.fixture()
-def data_source(csv_file, tmpdir):
-    dir_path = csv_file.dirpath()
-    ds = DataSource.from_dir(metadata_dir=str(tmpdir), files_dir_path=dir_path)
-    return ds
-
-
-@pytest.fixture()
 def data_source_googleplay(googleplay_csv, tmpdir):
     ds = DataSource(metadata_dir=str(tmpdir))
     ds.add_table_from_file(googleplay_csv)
@@ -651,3 +644,4 @@ class TestDataSource:
         sql = "SELECT name FROM titanic WHERE name IN ('Braund, Mr. Owen Harris', 'Cumings, Mrs. John Bradley (Florence Briggs Thayer)')"
         query_result = data_source.query(sql)
         assert (query_result.values == np.array(['Braund, Mr. Owen Harris', 'Cumings, Mrs. John Bradley (Florence Briggs Thayer)'])).all()
+
