@@ -52,3 +52,5 @@ ENV/
 pip-log.txt
 pip-delete-this-directory.txt
 
+dask-worker-space/
+*.csv
