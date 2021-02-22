@@ -242,7 +242,6 @@ class TestDataSource:
         sql = "SELECT passenger_id, survived FROM titanic WHERE survived = 1 AND sex = 'male' AND p_class > 0"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['passenger_id', 'survived']
-        print(query_result)
         assert query_result.empty
         values_left = out_df[['passenger_id', 'survived']].values
         values_right = query_result.values
