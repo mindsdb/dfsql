@@ -6,6 +6,7 @@ import os
 import json
 
 from dataskillet.exceptions import QueryExecutionException
+from dataskillet.functions import AggregateFunction
 from dataskillet.table import Table
 
 
@@ -298,7 +299,7 @@ class TestDataSource:
         assert (values_left == values_right).all().all()
 
         tdf = pd.DataFrame([[df['passenger_id'].count(), df['passenger_id'].count()]])
-        sql = "SELECT count(passenger_id), count(passenger_id) FROM titanic"
+        sql = "SELECT count(passenger_id) as count1, count(passenger_id) as count2 FROM titanic"
         query_result = data_source.query(sql)
         values_left = tdf.values
         values_right = query_result.values
@@ -329,6 +330,65 @@ class TestDataSource:
         assert query_result.shape == df.shape
 
         assert (query_result.survived == 1).all()
+        values_left = df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_groupby_custom_aggregate_func(self, csv_file, data_source):
+        sql = "SELECT sex, mode(survived) as mode_survived FROM titanic GROUP BY sex"
+
+        class ModeFunc(AggregateFunction):
+            def get_output(self, args):
+                return args[0].value_counts(dropna=False).index[0]
+
+        data_source.custom_functions['mode'] = ModeFunc()
+
+        query_result = data_source.query(sql)
+        df = pd.read_csv(csv_file)
+        df = df.groupby(['sex']).agg({'survived': lambda x: x.value_counts(dropna=False).index[0]}).reset_index()
+        df.columns = ['sex', 'mode_survived']
+
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+
+        values_left = df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_groupby_register_aggregate_func(self, csv_file, data_source):
+        sql = "SELECT sex, mode(survived) as mode_survived FROM titanic GROUP BY sex"
+
+        func = lambda x: x.value_counts(dropna=False).index[0]
+        data_source.register_aggregate_function('mode', func)
+
+        query_result = data_source.query(sql)
+        df = pd.read_csv(csv_file)
+        df = df.groupby(['sex']).agg({'survived': func}).reset_index()
+        df.columns = ['sex', 'mode_survived']
+
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+
+        values_left = df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_groupby_register_two_aggregate_funcs(self, csv_file, data_source):
+        sql = "SELECT sex, mode1(survived) as mode1_survived, mode2(survived) as mode2_survived FROM titanic GROUP BY sex"
+
+        func = lambda x: x.value_counts(dropna=False).index[0]
+        data_source.register_aggregate_function('mode1', func)
+        data_source.register_aggregate_function('mode2', func)
+
+        query_result = data_source.query(sql)
+        df = pd.read_csv(csv_file)
+        df = df.groupby(['sex']).agg({'survived': func}).reset_index()
+        df.columns = ['sex', 'mode1_survived']
+        df['mode2_survived'] = df['mode1_survived']
+
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+
         values_left = df.values
         values_right = query_result.values
         assert (values_left == values_right).all().all()

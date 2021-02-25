@@ -54,3 +54,5 @@ pip-delete-this-directory.txt
 
 dask-worker-space/
 *.csv
+
+testdrive_*

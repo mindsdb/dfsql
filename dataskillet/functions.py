@@ -255,8 +255,11 @@ class Like(BaseFunction, TwoArgsMixin, StringInputMixin, BoolOutputMixin):
 # Aggregate functions
 
 
-class AggregateFunction(BaseFunction):
+class AggregateFunction(BaseFunction, OneArgMixin):
     string_repr = None # for pandas group by
+
+    def assert_output(self, output):
+        pass
 
     @classmethod
     def string_or_callable(cls):

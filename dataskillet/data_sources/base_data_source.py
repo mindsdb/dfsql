@@ -1,14 +1,15 @@
 import os
+import pandas
 import modin.pandas as pd
 import numpy as np
 import json
 
 from dataskillet.cache import DoNothingCache, MemoryCache
 from dataskillet.exceptions import QueryExecutionException
-from dataskillet.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
+from dataskillet.functions import OPERATION_MAPPING, AGGREGATE_MAPPING, AggregateFunction
 from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
                                     Function,
-                                    AggregateFunction, Join, BinaryOperation, TypeCast, List)
+                                    AggregateFunction as ParserAggregateFunction, Join, BinaryOperation, TypeCast, List)
 from dataskillet.table import Table, FileTable
 
 
@@ -20,9 +21,10 @@ def get_modin_operation(sql_op):
 
 
 def get_aggregation_operation(sql_op):
-    op = AGGREGATE_MAPPING.get(sql_op.lower()).string_or_callable()
+    op = AGGREGATE_MAPPING.get(sql_op.lower())
     if not op:
         raise(QueryExecutionException(f'Unsupported operation: {sql_op}'))
+    op = op.string_or_callable()
     return op
 
 
@@ -33,7 +35,7 @@ def cast_type(obj, type_name):
 
 
 class DataSource:
-    def __init__(self, metadata_dir, tables=None, cache=None):
+    def __init__(self, metadata_dir, tables=None, cache=None, custom_functions=None):
         self.metadata_dir = metadata_dir
 
         tables = {t.name.lower(): t for t in tables} if tables else {}
@@ -51,6 +53,8 @@ class DataSource:
         self.set_cache(cache or MemoryCache())
 
         self._query_scope = {}
+        
+        self.custom_functions = custom_functions or {}
 
     def set_cache(self, cache):
         self.cache = cache
@@ -125,6 +129,9 @@ class DataSource:
     def __contains__(self, table_name):
         return table_name in self.tables
 
+    def register_aggregate_function(self, name, func):
+        self.custom_functions[name] = func
+
     def add_table(self, table):
         if self.tables.get(table.name):
             raise QueryExecutionException(f'Table {table.name} already exists in data source, use DROP TABLE to remove it if you want to recreate it.')
@@ -143,7 +150,7 @@ class DataSource:
         if command:
             return self.execute_command(command)
 
-        query = parse_sql(sql)
+        query = parse_sql(sql, custom_functions=self.custom_functions)
         return self.execute_query(query)
 
     def execute_table_identifier(self, query):
@@ -248,18 +255,19 @@ class DataSource:
         return out_df
 
     def execute_select_groupby_targets(self, targets, source_df, group_by):
-        funcs_to_alias = {}
-
         final_out_column_names = []
         out_column_names = []
         out_columns = []
 
         agg = {}
 
-        group_by_cols = [q.value for q in group_by if q.value != True]
+        group_by_cols = [q.value for q in group_by if q.value is not True]
         for target in targets:
             col_df_name = target.alias
             col_name = self.resolve_select_target_col_name(target)
+
+            if col_name in agg:
+                raise QueryExecutionException(f'Duplicate column name {col_name}. Provide an alias to resolve ambiguity.')
 
             if isinstance(target, Identifier):
                 col_df_name = target.value
@@ -268,13 +276,12 @@ class DataSource:
                 arg = target.args[0]
                 assert isinstance(arg, Identifier)
                 arg = arg.value
-                modin_op = get_aggregation_operation(target.op)
-                if agg.get(arg):
-                    agg[arg].append(modin_op)
-                else:
-                    agg[arg] = [modin_op]
 
-                funcs_to_alias[(arg, modin_op)] = col_name
+                modin_op = self.custom_functions.get(target.op.lower())
+                if not modin_op:
+                    modin_op = get_aggregation_operation(target.op.lower())
+
+                agg[col_name] = (arg, modin_op)
             else:
                 if col_name not in group_by_cols and col_df_name not in group_by_cols:
                     raise QueryExecutionException(f'Column {col_df_name}({col_name}) not found in GROUP BY clause')
@@ -283,33 +290,20 @@ class DataSource:
 
         if isinstance(source_df, pd.Series):
             source_df = pd.DataFrame(source_df)
-        aggregate_result = source_df.agg(agg)
-        for col_index in aggregate_result.reset_index().columns:
-            if isinstance(col_index, tuple):
-                if any([ind for ind in col_index[1:]]):
-                    # It's an aggregated thing
-                    continue
-                col_name = col_index[0]
-            else:
-                col_name = col_index
-            if col_name == 'index':
-                continue
 
-            out_column_names.append(col_name)
+        if isinstance(source_df, pd.DataFrame):
+            temp_df = pd.DataFrame(source_df)
+            temp_df['__dummy__'] = 0
+            source_df = temp_df.groupby('__dummy__')
+        aggregate_result = source_df.agg(**agg)
+
+        for col_index in aggregate_result.reset_index().columns:
+            if col_index not in final_out_column_names:
+                continue
+            out_column_names.append(col_index)
             out_columns.append(aggregate_result.reset_index()[col_index].values)
 
-        for col_name in agg:
-            for func in agg[col_name]:
-                alias = funcs_to_alias[(col_name, func)]
-                agg_result = aggregate_result[col_name][func]
-                try:
-                    agg_result = agg_result.values
-                except AttributeError:
-                    agg_result = np.array([agg_result])
-                out_columns.append(agg_result)
-                out_column_names.append(alias)
-
-        out_dict = {col: values for col, values in zip(out_column_names, out_columns) if col in final_out_column_names}
+        out_dict = {col: values for col, values in zip(out_column_names, out_columns)}
         out_df = pd.DataFrame(out_dict)
         return out_df
 
@@ -339,7 +333,7 @@ class DataSource:
             non_agg_functions = []
             agg_functions = []
             for target in query.targets:
-                if isinstance(target, AggregateFunction):
+                if isinstance(target, ParserAggregateFunction):
                     agg_functions.append(target)
                 else:
                     non_agg_functions.append(target)

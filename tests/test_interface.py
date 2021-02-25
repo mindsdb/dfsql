@@ -95,3 +95,22 @@ class TestQuickInterface:
 
         with pytest.raises(DataskilletException):
             sql_query(sql, from_tables={'whatever_table': df, 'another_table': df})
+
+    def test_custom_functions(self, csv_file):
+        from dataskillet.extensions import sql_query
+        df = pd.read_csv(csv_file)
+        sql = "SELECT sex, mode(survived) as mode_survived FROM titanic GROUP BY sex"
+
+        func = lambda x: x.value_counts(dropna=False).index[0]
+
+        query_result = sql_query(sql, from_tables={'titanic': df}, custom_functions={'mode': func})
+
+        df = df.groupby(['sex']).agg({'survived': func}).reset_index()
+        df.columns = ['sex', 'mode_survived']
+
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+
+        values_left = df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()

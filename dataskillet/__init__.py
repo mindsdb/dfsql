@@ -7,12 +7,12 @@ from dataskillet.data_sources import DataSource
 from dataskillet.exceptions import DataskilletException
 
 
-def sql_query(sql, from_tables):
+def sql_query(sql, from_tables, *args, **kwargs):
     if not from_tables or not isinstance(from_tables, dict):
         raise DataskilletException(f"Wrong from_tables value. Expected to be a dict of table names and dataframes, got: {str(from_tables)}")
 
     tmpdir = tempfile.gettempdir() + '/dataskillet_temp_' + time.ctime()
-    ds = DataSource(metadata_dir=str(tmpdir))
+    ds = DataSource(*args, metadata_dir=str(tmpdir), **kwargs)
     try:
         for table_name, dataframe in from_tables.items():
             if table_name not in sql:

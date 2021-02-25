@@ -71,8 +71,8 @@ class SQLAccessor:
         new_query += sql_query[last_pos:]
         return new_query
 
-    def __call__(self, sql):
+    def __call__(self, sql, *args, **kwargs):
         table_name = 'temp'
         sql = self.maybe_add_from_to_query(sql, table_name=table_name)
 
-        return sql_query(sql, from_tables={table_name: self._obj})
+        return sql_query(sql, *args, from_tables={table_name: self._obj}, **kwargs)

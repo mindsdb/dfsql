@@ -242,6 +242,23 @@ class TestParseSelect:
             assert str(parse_sql(query)) == str(
                 Select(targets=[Function(op=op.name, args_=(Identifier("column1"),))]))
 
+    def test_unsupported_aggregate_function(self):
+        query = f"""SELECT mode(column1)"""
+        with pytest.raises(SQLParsingException):
+            parse_sql(query)
+
+    def test_custom_aggregate_function(self):
+        query = f"""SELECT mode(column1)"""
+
+        class CustomFunc:
+            pass
+
+        custom_functions = {
+            'mode': CustomFunc
+        }
+
+        assert str(parse_sql(query, custom_functions=custom_functions)) == query
+
     def test_cast(self):
         query = f"""SELECT CAST(4 as int64) as result"""
 
