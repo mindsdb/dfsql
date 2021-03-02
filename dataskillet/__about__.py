@@ -1,10 +1,10 @@
 __title__ = 'dataskillet'
 __package_name__ = 'dataskillet'
-__version__ = '0.1.0'
-__description__ = "AutoETL framework, MindsDB Tooling for data preparation."
+__version__ = '0.2.0'
+__description__ = "SQL interface to Pandas and Modin"
 __email__ = "jorge@mindsdb.com"
 __author__ = 'MindsDB Inc'
 __github__ = 'https://github.com/mindsdb/dataskillet'
 __pypi__ = 'https://pypi.org/project/dataskillet'
-__license__ = 'MIT'
-__copyright__ = 'Copyright 2019- mindsdb'
+__license__ = 'GPL-3.0'
+__copyright__ = 'Copyright 2020- mindsdb'
