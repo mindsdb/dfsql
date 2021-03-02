@@ -1,6 +1,7 @@
 from dataskillet import sql_query
 import warnings
 import pandas as pd
+import modin.pandas as mpd
 from pandas.core.accessor import CachedAccessor
 
 
@@ -31,7 +32,7 @@ def register_modin_dataframe_accessor(name):
 @pd.api.extensions.register_dataframe_accessor("sql")
 class SQLAccessor:
     def __init__(self, pandas_obj):
-        self._obj = pandas_obj
+        self._obj = mpd.DataFrame(pandas_obj)
 
     def maybe_add_from_to_query(self, sql_query, table_name):
         """Inserts "FROM temp" into every SELECT clause in query that does not have a FROM clause."""
@@ -74,5 +75,4 @@ class SQLAccessor:
     def __call__(self, sql, *args, **kwargs):
         table_name = 'temp'
         sql = self.maybe_add_from_to_query(sql, table_name=table_name)
-
         return sql_query(sql, *args, from_tables={table_name: self._obj}, **kwargs)

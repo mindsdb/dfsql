@@ -1,12 +1,10 @@
 import os
-import pandas
 import modin.pandas as pd
-import numpy as np
 import json
 
-from dataskillet.cache import DoNothingCache, MemoryCache
+from dataskillet.cache import  MemoryCache
 from dataskillet.exceptions import QueryExecutionException
-from dataskillet.functions import OPERATION_MAPPING, AGGREGATE_MAPPING, AggregateFunction
+from dataskillet.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
 from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
                                     Function,
                                     AggregateFunction as ParserAggregateFunction, Join, BinaryOperation, TypeCast, List)
@@ -148,7 +146,6 @@ class DataSource:
         command = try_parse_command(sql)
         if command:
             return self.execute_command(command)
-
         query = parse_sql(sql, custom_functions=self.custom_functions)
         return self.execute_query(query)
 
@@ -216,8 +213,6 @@ class DataSource:
         return col_name
 
     def execute_select_targets(self, targets, source_df):
-        out_df = pd.DataFrame()
-
         out_names = []
 
         iterable_names = []
@@ -245,8 +240,10 @@ class DataSource:
                 scalar_values.append(select_target_result)
 
         # Add columns first, then scalars, so the dataframe has proper index in the end
+        out_columns = {}
         for i, col_name in enumerate(iterable_names):
-            out_df[col_name] = iterable_columns[i].tolist()
+            out_columns[col_name] = list(iterable_columns[i])
+        out_df = pd.DataFrame.from_dict(out_columns)
         for i, col_name in enumerate(scalar_names):
             if out_df.empty:
                 out_df[col_name] = [scalar_values[i]]
@@ -305,7 +302,7 @@ class DataSource:
             out_columns.append(aggregate_result.reset_index()[col_index].values)
 
         out_dict = {col: values for col, values in zip(out_column_names, out_columns)}
-        out_df = pd.DataFrame(out_dict)
+        out_df = pd.DataFrame.from_dict(out_dict)
         return out_df
 
     def execute_order_by(self, order_by, df):
@@ -315,14 +312,11 @@ class DataSource:
         return df
 
     def execute_select(self, query):
-        from_table = [pd.DataFrame()]
+        from_table = []
         if query.from_table:
             from_table = [self.execute_from_query(sub_q) for sub_q in query.from_table]
 
-        if len(from_table) != 1:
-            raise(QueryExecutionException(f'No idea how to deal with from_table len {len(from_table)}'))
-
-        source_df = from_table[0]
+        source_df = from_table[0] if len(from_table) >= 1 else None
 
         if query.where:
             index = self.execute_operation(query.where, source_df)
