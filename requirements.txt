@@ -1,6 +1,4 @@
-pandas==1.0.5
-numpy==1.18.5
-modin[all]==0.8.0
-pglast==1.12
-confi==0.0.4.1
-requests==2.22.0
+pandas >= 1.1.2
+numpy >= 1.18.5
+pglast >= 1.12
+confi >= 0.0.4.1

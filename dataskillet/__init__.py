@@ -2,9 +2,9 @@ import tempfile
 import os
 import shutil
 import time
+from dataskillet.config import Configuration
 from dataskillet.exceptions import DataskilletException
 from dataskillet.data_sources import DataSource
-from dataskillet.exceptions import DataskilletException
 
 
 def sql_query(sql, from_tables, *args, **kwargs):

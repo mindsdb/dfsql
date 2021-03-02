@@ -3,8 +3,6 @@ import pandas as pd
 import requests
 import os
 
-from dataskillet import DataSource
-
 
 @pytest.fixture()
 def csv_file(tmpdir):
@@ -26,7 +24,22 @@ def csv_file(tmpdir):
 
 
 @pytest.fixture()
-def data_source(csv_file, tmpdir):
+def config(monkeypatch):
+    from dataskillet.config import Configuration
+
+    class TestConfig(Configuration):
+        pass
+
+    TestConfig.USE_MODIN = True
+
+    monkeypatch.setattr('dataskillet.config.Configuration', TestConfig)
+    return TestConfig
+
+
+@pytest.fixture()
+def data_source(config, csv_file, tmpdir):
+    from dataskillet import DataSource
+
     dir_path = csv_file.dirpath()
     ds = DataSource.from_dir(metadata_dir=str(tmpdir), files_dir_path=dir_path)
     return ds

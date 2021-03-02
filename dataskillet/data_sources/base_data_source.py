@@ -1,5 +1,5 @@
 import os
-import modin.pandas as pd
+from dataskillet.engine import pd
 import json
 
 from dataskillet.cache import  MemoryCache

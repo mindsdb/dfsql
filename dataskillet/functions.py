@@ -1,6 +1,6 @@
 import re
-import modin.pandas as pd
-from pandas._testing import isiterable
+from dataskillet.engine import pd
+from collections import Iterable
 
 from dataskillet.utils import (is_modin, is_numeric, is_booly, is_stringy, raise_bad_inputs, raise_bad_outputs,
                                TwoArgsMixin, OneArgMixin, StringInputMixin, NumericInputMixin, BoolInputMixin,
@@ -113,7 +113,7 @@ class In(BaseFunction, BoolOutputMixin):
     name = 'in'
 
     def assert_args(self, args):
-        if not isiterable(args[1]):
+        if not isinstance(args[1], Iterable):
             raise_bad_inputs(self)
 
     def get_output(self, args):

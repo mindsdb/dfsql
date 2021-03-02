@@ -1,38 +1,14 @@
 from dataskillet import sql_query
+from dataskillet.engine import pd as pd_engine
 import warnings
-import pandas as pd
-import modin.pandas as mpd
+import pandas
 from pandas.core.accessor import CachedAccessor
 
 
-def register_modin_accessor(name, cls):
-    def decorator(accessor):
-        if hasattr(cls, name):
-            warnings.warn(
-                f"registration of accessor {repr(accessor)} under name "
-                f"{repr(name)} for type {repr(cls)} is overriding a preexisting "
-                f"attribute with the same name.",
-                UserWarning,
-                stacklevel=2,
-            )
-
-        setattr(cls, name, CachedAccessor(name, accessor))
-        return accessor
-
-    return decorator
-
-
-def register_modin_dataframe_accessor(name):
-    from modin.pandas import DataFrame
-
-    return register_modin_accessor(name, DataFrame)
-
-
-@register_modin_dataframe_accessor("sql")
-@pd.api.extensions.register_dataframe_accessor("sql")
+@pandas.api.extensions.register_dataframe_accessor("sql")
 class SQLAccessor:
     def __init__(self, pandas_obj):
-        self._obj = mpd.DataFrame(pandas_obj)
+        self._obj = pd_engine.DataFrame(pandas_obj)
 
     def maybe_add_from_to_query(self, sql_query, table_name):
         """Inserts "FROM temp" into every SELECT clause in query that does not have a FROM clause."""
@@ -76,3 +52,31 @@ class SQLAccessor:
         table_name = 'temp'
         sql = self.maybe_add_from_to_query(sql, table_name=table_name)
         return sql_query(sql, *args, from_tables={table_name: self._obj}, **kwargs)
+
+try:
+    import modin.pandas as mpd
+
+    def register_modin_accessor(name, cls):
+        def decorator(accessor):
+            if hasattr(cls, name):
+                warnings.warn(
+                    f"registration of accessor {repr(accessor)} under name "
+                    f"{repr(name)} for type {repr(cls)} is overriding a preexisting "
+                    f"attribute with the same name.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+            setattr(cls, name, CachedAccessor(name, accessor))
+            return accessor
+
+        return decorator
+
+
+    def register_modin_dataframe_accessor(name):
+        from modin.pandas import DataFrame
+        return register_modin_accessor(name, DataFrame)
+
+    register_modin_dataframe_accessor("sql")(SQLAccessor)
+except ImportError:
+    pass

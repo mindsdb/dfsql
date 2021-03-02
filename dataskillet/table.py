@@ -1,5 +1,5 @@
 import re
-import modin.pandas as pd
+from dataskillet.engine import pd
 import numpy as np
 import os
 

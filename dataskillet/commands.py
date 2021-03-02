@@ -1,4 +1,4 @@
-import modin.pandas as pd
+from dataskillet.engine import pd
 import re
 from dataskillet.exceptions import CommandException
 

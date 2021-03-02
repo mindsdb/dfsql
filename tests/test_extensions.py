@@ -12,10 +12,11 @@ from dataskillet.exceptions import QueryExecutionException, DataskilletException
     ],
 )
 class TestExtensions:
-    def test_df_sql_simple_select(self, engine, csv_file):
+    def test_df_sql_simple_select(self, config, engine, csv_file):
         import dataskillet.extensions
 
         df = engine.read_csv(csv_file)
+
 
         sql_queries = [
             "SELECT passenger_id FROM temp",
@@ -29,7 +30,7 @@ class TestExtensions:
             values_right = query_result.values
             assert (values_left == values_right).all()
 
-    def test_df_sql_nested_select_in(self, engine, csv_file):
+    def test_df_sql_nested_select_in(self, config, engine, csv_file):
         import dataskillet.extensions
 
         df = pd.read_csv(csv_file)
@@ -51,7 +52,7 @@ class TestExtensions:
             values_right = query_result.dropna().values
             assert (values_left == values_right).all()
 
-    def test_df_sql_nested_select_from(self, engine, csv_file):
+    def test_df_sql_nested_select_from(self, config, engine, csv_file):
         import dataskillet.extensions
 
         df = pd.read_csv(csv_file)[['passenger_id', 'fare']]

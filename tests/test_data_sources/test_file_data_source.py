@@ -1,6 +1,6 @@
 import pytest
 from dataskillet.data_sources import DataSource
-import modin.pandas as pd
+from dataskillet.engine import pd
 import numpy as np
 import os
 import json
