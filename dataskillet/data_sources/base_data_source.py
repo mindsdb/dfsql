@@ -14,18 +14,17 @@ from dataskillet.table import Table, FileTable
 
 
 def get_modin_operation(sql_op):
-    op = OPERATION_MAPPING.get(sql_op.lower())()
+    op = OPERATION_MAPPING.get(sql_op.lower())
     if not op:
         raise(QueryExecutionException(f'Unsupported operation: {sql_op}'))
-    return op
+    return op()
 
 
 def get_aggregation_operation(sql_op):
     op = AGGREGATE_MAPPING.get(sql_op.lower())
     if not op:
         raise(QueryExecutionException(f'Unsupported operation: {sql_op}'))
-    op = op.string_or_callable()
-    return op
+    return op.string_or_callable()
 
 
 def cast_type(obj, type_name):
@@ -129,7 +128,7 @@ class DataSource:
     def __contains__(self, table_name):
         return table_name in self.tables
 
-    def register_aggregate_function(self, name, func):
+    def register_function(self, name, func):
         self.custom_functions[name] = func
 
     def add_table(self, table):
@@ -170,7 +169,9 @@ class DataSource:
 
     def execute_operation(self, query, df):
         args = [self.execute_select_target(arg, df) for arg in query.args]
-        op_func = get_modin_operation(query.op)
+        op_func = self.custom_functions.get(query.op.lower())
+        if not op_func:
+            op_func = get_modin_operation(query.op.lower())
         result = op_func(*args)
         return result
 

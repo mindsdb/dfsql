@@ -359,7 +359,7 @@ class TestDataSource:
         sql = "SELECT sex, mode(survived) as mode_survived FROM titanic GROUP BY sex"
 
         func = lambda x: x.value_counts(dropna=False).index[0]
-        data_source.register_aggregate_function('mode', func)
+        data_source.register_function('mode', func)
 
         query_result = data_source.query(sql)
         df = pd.read_csv(csv_file)
@@ -377,8 +377,8 @@ class TestDataSource:
         sql = "SELECT sex, mode1(survived) as mode1_survived, mode2(survived) as mode2_survived FROM titanic GROUP BY sex"
 
         func = lambda x: x.value_counts(dropna=False).index[0]
-        data_source.register_aggregate_function('mode1', func)
-        data_source.register_aggregate_function('mode2', func)
+        data_source.register_function('mode1', func)
+        data_source.register_function('mode2', func)
 
         query_result = data_source.query(sql)
         df = pd.read_csv(csv_file)
@@ -704,3 +704,27 @@ class TestDataSource:
         query_result = data_source.query(sql)
         assert (query_result.values == np.array(['Braund, Mr. Owen Harris', 'Cumings, Mrs. John Bradley (Florence Briggs Thayer)'])).all()
 
+    def test_custom_function_select(self, data_source, csv_file):
+        def custom(x):
+            return x + '_custom_addition'
+
+        data_source.register_function('custom', custom)
+        sql = "SELECT custom('a')"
+        query_result = data_source.query(sql)
+        assert query_result == 'a_custom_addition'
+
+        df = pd.read_csv(csv_file)
+        sql = "SELECT custom(name) FROM titanic"
+        query_result = data_source.query(sql)
+        assert (query_result.values == df.name.values + '_custom_addition').all()
+
+    def test_custom_function_where(self, data_source, csv_file):
+        df = pd.read_csv(csv_file)
+
+        def did_survive(survived):
+            return survived == 1
+
+        data_source.register_function('did_survive', did_survive)
+        sql = "SELECT passenger_id FROM titanic WHERE did_survive(survived)"
+        query_result = data_source.query(sql)
+        assert (query_result.values == df[df.survived == 1]['passenger_id'].values).all()
