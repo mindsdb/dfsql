@@ -1,4 +1,4 @@
-name: pdsql CI unit tests
+name: build and publish to pypi
 
 on:
   push:

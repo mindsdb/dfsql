@@ -31,7 +31,7 @@ def config(monkeypatch):
         pass
 
     TestConfig.USE_MODIN = True
-    TestConfig.MODIN_ENGINE = 'ray'
+    TestConfig.MODIN_ENGINE = 'pandas'
 
     monkeypatch.setattr('pdsql.config.Configuration', TestConfig)
     return TestConfig
