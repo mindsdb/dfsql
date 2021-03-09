@@ -1,4 +1,4 @@
-from dataskillet.sql_parser.base import Statement
+from pdsql.sql_parser.base import Statement
 
 
 class Constant(Statement):

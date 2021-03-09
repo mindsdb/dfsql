@@ -1,4 +1,4 @@
-from dataskillet.cache import MemoryCache
+from pdsql.cache import MemoryCache
 
 
 class TestCache:

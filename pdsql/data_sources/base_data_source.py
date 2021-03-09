@@ -1,14 +1,14 @@
 import os
-from dataskillet.engine import pd
+from pdsql.engine import pd
 import json
 
-from dataskillet.cache import  MemoryCache
-from dataskillet.exceptions import QueryExecutionException
-from dataskillet.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
-from dataskillet.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
+from pdsql.cache import  MemoryCache
+from pdsql.exceptions import QueryExecutionException
+from pdsql.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
+from pdsql.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
                                     Function,
                                     AggregateFunction as ParserAggregateFunction, Join, BinaryOperation, TypeCast, List)
-from dataskillet.table import Table, FileTable
+from pdsql.table import Table, FileTable
 
 
 def get_modin_operation(sql_op):

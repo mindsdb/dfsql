@@ -1,14 +1,19 @@
 import re
-from dataskillet.engine import pd
+from pdsql.engine import pd
 from collections import Iterable
 
-from dataskillet.utils import (is_modin, is_numeric, is_booly, is_stringy, raise_bad_inputs, raise_bad_outputs,
+from pdsql.utils import (is_modin, is_numeric, is_booly, is_stringy, raise_bad_inputs, raise_bad_outputs,
                                TwoArgsMixin, OneArgMixin, StringInputMixin, NumericInputMixin, BoolInputMixin,
                                BoolOutputMixin, StringOutputMixin, NumericOutputMixin)
 
 
 class BaseFunction:
     name = None
+
+    # Fixes an issue with Modin internals trying to get the __name__ of aggregation functions
+    @property
+    def __name__(self):
+        return self.name
 
     def assert_args(self, args):
         super().assert_args(args)
@@ -306,7 +311,7 @@ OPERATIONS = (
 OPERATION_MAPPING = {
     op.name: op for op in OPERATIONS
 }
-OPERATION_MAPPING['<>'] = Equals
+OPERATION_MAPPING['<>'] = NotEquals
 
 AGGREGATE_FUNCTIONS = (
     Sum, Mean, Count, CountDistinct,

@@ -1,5 +1,5 @@
-from dataskillet.sql_parser.base import Statement
-from dataskillet.exceptions import SQLParsingException
+from pdsql.sql_parser.base import Statement
+from pdsql.exceptions import SQLParsingException
 
 
 LOOKUP_BOOL_OPERATION = {

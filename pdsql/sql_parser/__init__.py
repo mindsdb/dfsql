@@ -1,20 +1,20 @@
-from dataskillet.functions import AGGREGATE_MAPPING, is_supported
-from dataskillet.sql_parser.list_ import List
-from dataskillet.sql_parser.select import Select
-from dataskillet.sql_parser.constant import Constant
-from dataskillet.sql_parser.expression import Expression, Star
-from dataskillet.sql_parser.identifier import Identifier
-from dataskillet.sql_parser.operation import Operation, BinaryOperation, Function, AggregateFunction, LOOKUP_BOOL_OPERATION, \
+from pdsql.functions import AGGREGATE_MAPPING, is_supported
+from pdsql.sql_parser.list_ import List
+from pdsql.sql_parser.select import Select
+from pdsql.sql_parser.constant import Constant
+from pdsql.sql_parser.expression import Expression, Star
+from pdsql.sql_parser.identifier import Identifier
+from pdsql.sql_parser.operation import Operation, BinaryOperation, Function, AggregateFunction, LOOKUP_BOOL_OPERATION, \
     InOperation, UnaryOperation, operation_factory, LOOKUP_NULL_TEST, ComparisonPredicate, LOOKUP_BOOL_TEST
-from dataskillet.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
-from dataskillet.sql_parser.join import Join, LOOKUP_JOIN_TYPE
-from dataskillet.exceptions import SQLParsingException
-from dataskillet.commands import command_types
+from pdsql.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
+from pdsql.sql_parser.join import Join, LOOKUP_JOIN_TYPE
+from pdsql.exceptions import SQLParsingException
+from pdsql.commands import command_types
 
 
 import pglast
 
-from dataskillet.sql_parser.type_cast import TypeCast, MAP_DTYPES
+from pdsql.sql_parser.type_cast import TypeCast, MAP_DTYPES
 
 
 class SQLParser:

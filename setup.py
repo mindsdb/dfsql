@@ -1,7 +1,7 @@
 import setuptools
 
 about = {}
-with open("dataskillet/__about__.py") as fp:
+with open("pdsql/__about__.py") as fp:
     exec(fp.read(), about)
 
 
@@ -20,7 +20,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=requirements,
     extras_require=dict(
-        testing=['pytest>=5.4.3', 'requests >= 2.22.0', 'modin[all]>=0.8.0'],
+        test=['pytest>=5.4.3', 'requests >= 2.22.0', 'modin[all]>=0.8.0'],
         modin=['modin[all]>=0.8.0']),
     classifiers=(
         "Programming Language :: Python :: 3",

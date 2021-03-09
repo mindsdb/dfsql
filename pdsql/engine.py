@@ -1,4 +1,4 @@
-from dataskillet.config import Configuration
+from pdsql.config import Configuration
 
 pd = None
 if Configuration.USE_MODIN:

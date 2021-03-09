@@ -2,10 +2,10 @@ from confi import BaseEnvironConfig, ConfigField, ConfigError, BooleanConfig
 from distutils.util import strtobool
 import logging
 
-engine_options = ('ray', 'dask')
-
 
 def process_engine_options(value):
+    engine_options = ('ray', 'dask')
+
     value = value.strip().lower()
     if value not in engine_options:
         raise ConfigError(f'MODIN_ENGINE must be one of {str(engine_options)}, got: {value}')
@@ -16,7 +16,7 @@ def true_if_modin_installed():
     try:
         import modin
         logging.info(
-            "Detected installed modin and an explicit USE_MODIN value was not provided. Modin will be used for dataskillet operations.")
+            "Detected Modin and an explicit USE_MODIN value was not provided. Modin will be used for pdsql operations.")
         return True
     except ImportError:
         return False

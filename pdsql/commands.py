@@ -1,6 +1,6 @@
-from dataskillet.engine import pd
+from pdsql.engine import pd
 import re
-from dataskillet.exceptions import CommandException
+from pdsql.exceptions import CommandException
 
 
 class Command:

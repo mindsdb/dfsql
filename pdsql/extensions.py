@@ -1,5 +1,5 @@
-from dataskillet import sql_query
-from dataskillet.engine import pd as pd_engine
+from pdsql import sql_query
+from pdsql.engine import pd as pd_engine
 import warnings
 import pandas
 from pandas.core.accessor import CachedAccessor

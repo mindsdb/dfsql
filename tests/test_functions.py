@@ -1,8 +1,8 @@
 import pytest
-from dataskillet.engine import pd
+from pdsql.engine import pd
 
-from dataskillet.exceptions import QueryExecutionException
-from dataskillet.functions import And
+from pdsql.exceptions import QueryExecutionException
+from pdsql.functions import And
 
 
 class TestFunctionBase:

@@ -1,13 +1,13 @@
 import pytest
-from dataskillet.data_sources import DataSource
-from dataskillet.engine import pd
+from pdsql.data_sources import DataSource
+from pdsql.engine import pd
 import numpy as np
 import os
 import json
 
-from dataskillet.exceptions import QueryExecutionException
-from dataskillet.functions import AggregateFunction
-from dataskillet.table import Table
+from pdsql.exceptions import QueryExecutionException
+from pdsql.functions import AggregateFunction
+from pdsql.table import Table
 
 
 @pytest.fixture()
@@ -239,15 +239,23 @@ class TestDataSource:
         assert values_left.shape == values_right.shape
         assert (values_left == values_right).all()
 
-        out_df = df[(df.survived == 1) & (df.sex == 'male') & (df.p_class > 0)][['passenger_id', 'survived']]
-        sql = "SELECT passenger_id, survived FROM titanic WHERE survived = 1 AND sex = 'male' AND p_class > 0"
+        out_df = df[df.survived == 1]
+        out_df = out_df[out_df.sex != 'male']
+        out_df = out_df[out_df.p_class > 0]
+        out_df = out_df[['passenger_id', 'survived']]
+        sql = "SELECT passenger_id, survived FROM titanic WHERE survived = 1 AND sex != 'male' AND p_class > 0"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['passenger_id', 'survived']
-        assert query_result.empty
         values_left = out_df[['passenger_id', 'survived']].values
         values_right = query_result.values
         assert values_left.shape == values_right.shape
         assert (values_left == values_right).all()
+
+    def test_select_where_empty_result(self, csv_file, data_source):
+        sql = "SELECT passenger_id, survived FROM titanic WHERE survived = 3"
+        query_result = data_source.query(sql)
+        assert query_result.empty
+        assert list(query_result.columns) == ['passenger_id', 'survived']
 
     def test_where_operator_order(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
@@ -298,12 +306,9 @@ class TestDataSource:
         values_right = query_result.values
         assert (values_left == values_right).all().all()
 
-        tdf = pd.DataFrame([[df['passenger_id'].count(), df['passenger_id'].count()]])
-        sql = "SELECT count(passenger_id) as count1, count(passenger_id) as count2 FROM titanic"
+        sql = "SELECT count(passenger_id) as count1 FROM titanic"
         query_result = data_source.query(sql)
-        values_left = tdf.values
-        values_right = query_result.values
-        assert (values_left == values_right).all().all()
+        assert (query_result == df['passenger_id'].count())
 
     def test_groupby(self, csv_file, data_source):
         sql = "SELECT survived, p_class, count(passenger_id) as count_passenger_id FROM titanic GROUP BY survived, p_class HAVING survived = 1"

@@ -1,12 +1,12 @@
 import pandas as pd
 import pytest
 
-from dataskillet.exceptions import QueryExecutionException, DataskilletException
+from pdsql.exceptions import QueryExecutionException, pdsqlException
 
 
 class TestQuickInterface:
     def test_simple_select(self, csv_file):
-        from dataskillet.extensions import sql_query
+        from pdsql.extensions import sql_query
 
         df = pd.read_csv(csv_file)
 
@@ -26,7 +26,7 @@ class TestQuickInterface:
         assert (values_left == values_right).all()
 
     def test_select_join(self, csv_file):
-        from dataskillet.extensions import sql_query
+        from pdsql.extensions import sql_query
         df = pd.read_csv(csv_file)
         merge_df = pd.merge(df, df, how='inner', left_on=['passenger_id'], right_on=['p_class'])[
             ['passenger_id_x', 'p_class_y']]
@@ -51,7 +51,7 @@ class TestQuickInterface:
         assert (values_left == values_right).all().all()
 
     def test_error_table_not_found(self, csv_file):
-        from dataskillet.extensions import sql_query
+        from pdsql.extensions import sql_query
         df = pd.read_csv(csv_file)
 
         sql = "SELECT passenger_id FROM whatever_table INNER JOIN missing_table ON id"
@@ -59,13 +59,13 @@ class TestQuickInterface:
             sql_query(sql, from_tables={'whatever_table': df})
 
     def test_error_wrong_table_name(self, csv_file):
-        from dataskillet.extensions import sql_query
+        from pdsql.extensions import sql_query
 
         df = pd.read_csv(csv_file)
 
         sql = "SELECT passenger_id FROM whatever_table"
 
-        with pytest.raises(DataskilletException):
+        with pytest.raises(pdsqlException):
             sql_query(sql, from_tables={'wrong_table': df})
 
         # Run again to make sure it works after a failure
@@ -76,28 +76,28 @@ class TestQuickInterface:
         assert (values_left == values_right).all()
 
     def test_error_no_tables(self):
-        from dataskillet.extensions import sql_query
+        from pdsql.extensions import sql_query
         sql = "SELECT passenger_id FROM whatever_table"
 
-        with pytest.raises(DataskilletException):
+        with pytest.raises(pdsqlException):
             sql_query(sql, None)
 
-        with pytest.raises(DataskilletException):
+        with pytest.raises(pdsqlException):
             sql_query(sql, from_tables={})
 
-        with pytest.raises(DataskilletException):
+        with pytest.raises(pdsqlException):
             sql_query(sql, from_tables=[])
 
     def test_error_extra_tables(self, csv_file):
-        from dataskillet.extensions import sql_query
+        from pdsql.extensions import sql_query
         df = pd.read_csv(csv_file)
         sql = "SELECT passenger_id FROM whatever_table"
 
-        with pytest.raises(DataskilletException):
+        with pytest.raises(pdsqlException):
             sql_query(sql, from_tables={'whatever_table': df, 'another_table': df})
 
     def test_custom_functions(self, csv_file):
-        from dataskillet.extensions import sql_query
+        from pdsql.extensions import sql_query
         df = pd.read_csv(csv_file)
         sql = "SELECT sex, mode(survived) as mode_survived FROM titanic GROUP BY sex"
 

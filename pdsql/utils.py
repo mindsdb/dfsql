@@ -1,5 +1,5 @@
-from dataskillet.engine import pd
-from dataskillet.exceptions import QueryExecutionException
+from pdsql.engine import pd
+from pdsql.exceptions import QueryExecutionException
 
 
 def raise_bad_inputs(func):

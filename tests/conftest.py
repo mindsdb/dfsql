@@ -25,24 +25,25 @@ def csv_file(tmpdir):
 
 @pytest.fixture()
 def config(monkeypatch):
-    from dataskillet.config import Configuration
+    from pdsql.config import Configuration
 
     class TestConfig(Configuration):
         pass
 
     TestConfig.USE_MODIN = True
+    TestConfig.MODIN_ENGINE = 'ray'
 
-    monkeypatch.setattr('dataskillet.config.Configuration', TestConfig)
+    monkeypatch.setattr('pdsql.config.Configuration', TestConfig)
     return TestConfig
 
 
 @pytest.fixture()
 def data_source(config, csv_file, tmpdir):
-    from dataskillet import DataSource
-
+    from pdsql import DataSource
     dir_path = csv_file.dirpath()
     ds = DataSource.from_dir(metadata_dir=str(tmpdir), files_dir_path=dir_path)
     return ds
+
 
 @pytest.fixture(scope='session', autouse=True)
 def root_directory(request):
