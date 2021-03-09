@@ -67,7 +67,9 @@ class SQLParser:
         alias = None
         if stmt.get('alias'):
             alias = stmt['alias']['Alias']['aliasname']
-        return Identifier(value=stmt['relname'], alias=alias, raw=stmt)
+        schema = stmt.get('schemaname', '')
+        name = ((schema + '.') if schema else '') + stmt['relname']
+        return Identifier(value=name, alias=alias, raw=stmt)
 
     def parse_func_call(self, stmt):
         op = stmt['funcname'][0]['String']['str']
