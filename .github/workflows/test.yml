@@ -1,7 +1,6 @@
 name: run unit tests
 
 on:
-  push:
   pull_request:
 
 jobs:
@@ -9,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
         python-version: [3.6,3.7,3.8]
     steps:
     - uses: actions/checkout@v2
