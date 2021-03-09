@@ -1,4 +1,4 @@
-name: pdsql CI unit tests
+name: run unit tests
 
 on:
   push:
@@ -29,3 +29,4 @@ jobs:
       shell: bash
       env:
         CHECK_FOR_UPDATES: False
+
