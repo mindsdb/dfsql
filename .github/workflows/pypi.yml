@@ -1,8 +1,9 @@
-name: build and publish to pypi
+name: Build and publish to pypi
 
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - stable
 
 jobs:
   test:
@@ -26,7 +27,7 @@ jobs:
         run: pytest
         shell: bash
 
-  deploy:
+  deploy_pypi:
     runs-on: ubuntu-latest
     needs: test
     steps:
