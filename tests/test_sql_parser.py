@@ -274,3 +274,11 @@ class TestParseSelect:
                                                        Identifier('col'),
                                                        List(items=[Constant(1), Constant(2)])
                                                    ))))
+
+    def test_parse_from_with_dots(self):
+        query = "SELECT 1 FROM schema.table"
+
+        assert str(parse_sql(query)) == str(Select(
+            targets=[Constant(1)],
+            from_table=[Identifier('schema.table')]
+        ))
