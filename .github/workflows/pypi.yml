@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ 3.6,3.7,3.8 ]
+        python-version: [ 3.7,3.8 ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -23,13 +23,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install --no-cache-dir -e .[test]
-        env:
-          CHECK_FOR_UPDATES: False
       - name: Run unit tests
         run: pytest
         shell: bash
-        env:
-          CHECK_FOR_UPDATES: False
 
   deploy:
     runs-on: ubuntu-latest
