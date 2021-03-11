@@ -434,7 +434,8 @@ class DataSource:
 
         for query in queries:
             if isinstance(query, Identifier):
-                col_names.append(self.execute_column_identifier(query, df))
+                column = self.execute_column_identifier(query, df)
+                col_names.append(column.name)
             else:
                 raise QueryExecutionException(f"Don't know how to aggregate by {str(query)}")
         return df.groupby(col_names)
