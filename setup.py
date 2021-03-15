@@ -1,7 +1,7 @@
 import setuptools
 
 about = {}
-with open("pdsql/__about__.py") as fp:
+with open("dfsql/__about__.py") as fp:
     exec(fp.read(), about)
 
 

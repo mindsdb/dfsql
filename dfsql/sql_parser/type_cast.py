@@ -1,4 +1,4 @@
-from pdsql.sql_parser.base import Statement
+from dfsql.sql_parser.base import Statement
 
 MAP_DTYPES = {
     'int4': 'int',

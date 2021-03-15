@@ -1,20 +1,20 @@
-from pdsql.functions import AGGREGATE_MAPPING, is_supported
-from pdsql.sql_parser.list_ import List
-from pdsql.sql_parser.select import Select
-from pdsql.sql_parser.constant import Constant
-from pdsql.sql_parser.expression import Expression, Star
-from pdsql.sql_parser.identifier import Identifier
-from pdsql.sql_parser.operation import Operation, BinaryOperation, Function, AggregateFunction, LOOKUP_BOOL_OPERATION, \
+from dfsql.functions import AGGREGATE_MAPPING, is_supported
+from dfsql.sql_parser.list_ import List
+from dfsql.sql_parser.select import Select
+from dfsql.sql_parser.constant import Constant
+from dfsql.sql_parser.expression import Expression, Star
+from dfsql.sql_parser.identifier import Identifier
+from dfsql.sql_parser.operation import Operation, BinaryOperation, Function, AggregateFunction, LOOKUP_BOOL_OPERATION, \
     InOperation, UnaryOperation, operation_factory, LOOKUP_NULL_TEST, ComparisonPredicate, LOOKUP_BOOL_TEST
-from pdsql.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
-from pdsql.sql_parser.join import Join, LOOKUP_JOIN_TYPE
-from pdsql.exceptions import SQLParsingException
-from pdsql.commands import command_types
+from dfsql.sql_parser.order_by import OrderBy, LOOKUP_ORDER_DIRECTIONS, LOOKUP_NULLS_SORT
+from dfsql.sql_parser.join import Join, LOOKUP_JOIN_TYPE
+from dfsql.exceptions import SQLParsingException
+from dfsql.commands import command_types
 
 
 import pglast
 
-from pdsql.sql_parser.type_cast import TypeCast, MAP_DTYPES
+from dfsql.sql_parser.type_cast import TypeCast, MAP_DTYPES
 
 
 class SQLParser:

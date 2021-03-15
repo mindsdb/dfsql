@@ -1,5 +1,5 @@
-from pdsql.engine import pd
-from pdsql.exceptions import QueryExecutionException
+from dfsql.engine import pd
+from dfsql.exceptions import QueryExecutionException
 
 
 def raise_bad_inputs(func):

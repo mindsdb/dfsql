@@ -1,8 +1,8 @@
 import re
-from pdsql.engine import pd
+from dfsql.engine import pd
 from collections import Iterable
 
-from pdsql.utils import (is_modin, is_numeric, is_booly, is_stringy, raise_bad_inputs, raise_bad_outputs,
+from dfsql.utils import (is_modin, is_numeric, is_booly, is_stringy, raise_bad_inputs, raise_bad_outputs,
                                TwoArgsMixin, OneArgMixin, StringInputMixin, NumericInputMixin, BoolInputMixin,
                                BoolOutputMixin, StringOutputMixin, NumericOutputMixin)
 

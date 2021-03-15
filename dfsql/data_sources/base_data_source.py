@@ -1,14 +1,14 @@
 import os
-from pdsql.engine import pd
+from dfsql.engine import pd
 import json
 
-from pdsql.cache import  MemoryCache
-from pdsql.exceptions import QueryExecutionException
-from pdsql.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
-from pdsql.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
+from dfsql.cache import  MemoryCache
+from dfsql.exceptions import QueryExecutionException
+from dfsql.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
+from dfsql.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
                                     Function,
                                     AggregateFunction as ParserAggregateFunction, Join, BinaryOperation, TypeCast, List)
-from pdsql.table import Table, FileTable
+from dfsql.table import Table, FileTable
 
 
 def get_modin_operation(sql_op):

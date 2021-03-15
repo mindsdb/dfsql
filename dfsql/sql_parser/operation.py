@@ -1,5 +1,5 @@
-from pdsql.sql_parser.base import Statement
-from pdsql.exceptions import SQLParsingException
+from dfsql.sql_parser.base import Statement
+from dfsql.exceptions import SQLParsingException
 
 
 LOOKUP_BOOL_OPERATION = {

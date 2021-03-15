@@ -25,7 +25,7 @@ def csv_file(tmpdir):
 
 @pytest.fixture()
 def config(monkeypatch):
-    from pdsql.config import Configuration
+    from dfsql.config import Configuration
 
     class TestConfig(Configuration):
         pass
@@ -33,13 +33,13 @@ def config(monkeypatch):
     TestConfig.USE_MODIN = True
     TestConfig.MODIN_ENGINE = 'pandas'
 
-    monkeypatch.setattr('pdsql.config.Configuration', TestConfig)
+    monkeypatch.setattr('dfsql.config.Configuration', TestConfig)
     return TestConfig
 
 
 @pytest.fixture()
 def data_source(config, csv_file, tmpdir):
-    from pdsql import DataSource
+    from dfsql import DataSource
     dir_path = csv_file.dirpath()
     ds = DataSource.from_dir(metadata_dir=str(tmpdir), files_dir_path=dir_path)
     return ds

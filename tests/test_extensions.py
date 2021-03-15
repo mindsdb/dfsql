@@ -1,7 +1,7 @@
 import modin.pandas as mpd
 import pandas as pd
 import pytest
-from pdsql.exceptions import QueryExecutionException, pdsqlException
+from dfsql.exceptions import QueryExecutionException, dfsqlException
 
 
 @pytest.mark.parametrize(
@@ -13,7 +13,7 @@ from pdsql.exceptions import QueryExecutionException, pdsqlException
 )
 class TestExtensions:
     def test_df_sql_simple_select(self, config, engine, csv_file):
-        import pdsql.extensions
+        import dfsql.extensions
 
         df = engine.read_csv(csv_file)
 
@@ -31,7 +31,7 @@ class TestExtensions:
             assert (values_left == values_right).all()
 
     def test_df_sql_nested_select_in(self, config, engine, csv_file):
-        import pdsql.extensions
+        import dfsql.extensions
 
         df = pd.read_csv(csv_file)
 
@@ -53,7 +53,7 @@ class TestExtensions:
             assert (values_left == values_right).all()
 
     def test_df_sql_nested_select_from(self, config, engine, csv_file):
-        import pdsql.extensions
+        import dfsql.extensions
 
         df = pd.read_csv(csv_file)[['passenger_id', 'fare']]
         sql_queries = [

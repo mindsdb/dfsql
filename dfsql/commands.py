@@ -1,6 +1,6 @@
-from pdsql.engine import pd
+from dfsql.engine import pd
 import re
-from pdsql.exceptions import CommandException
+from dfsql.exceptions import CommandException
 
 
 class Command:

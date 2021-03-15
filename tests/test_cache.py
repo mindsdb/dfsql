@@ -1,4 +1,4 @@
-from pdsql.cache import MemoryCache
+from dfsql.cache import MemoryCache
 
 
 class TestCache:

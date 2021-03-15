@@ -1,10 +1,10 @@
 import pytest
 
-from pdsql.functions import AGGREGATE_FUNCTIONS
-from pdsql.sql_parser import (parse_sql, Select, Constant, Star, Identifier, BinaryOperation, Function,
+from dfsql.functions import AGGREGATE_FUNCTIONS
+from dfsql.sql_parser import (parse_sql, Select, Constant, Star, Identifier, BinaryOperation, Function,
                                     OrderBy, Join, InOperation, SQLParsingException, UnaryOperation,
                                     ComparisonPredicate, TypeCast)
-from pdsql.sql_parser.list_ import List
+from dfsql.sql_parser.list_ import List
 
 
 class TestParseSelect:

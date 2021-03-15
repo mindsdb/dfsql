@@ -1,4 +1,4 @@
-from pdsql.sql_parser.base import Statement
+from dfsql.sql_parser.base import Statement
 
 
 class List(Statement):

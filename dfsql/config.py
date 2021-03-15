@@ -16,7 +16,7 @@ def true_if_modin_installed():
     try:
         import modin
         logging.info(
-            "Detected Modin and an explicit USE_MODIN value was not provided. Modin will be used for pdsql operations.")
+            "Detected Modin and an explicit USE_MODIN value was not provided. Modin will be used for dfsql operations.")
         return True
     except ImportError:
         return False

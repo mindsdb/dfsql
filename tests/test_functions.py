@@ -1,8 +1,8 @@
 import pytest
-from pdsql.engine import pd
+from dfsql.engine import pd
 
-from pdsql.exceptions import QueryExecutionException
-from pdsql.functions import And
+from dfsql.exceptions import QueryExecutionException
+from dfsql.functions import And
 
 
 class TestFunctionBase:

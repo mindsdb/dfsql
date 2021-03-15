@@ -1,5 +1,5 @@
-from pdsql import sql_query
-from pdsql.engine import pd as pd_engine
+from dfsql import sql_query
+from dfsql.engine import pd as pd_engine
 import warnings
 import pandas
 from pandas.core.accessor import CachedAccessor

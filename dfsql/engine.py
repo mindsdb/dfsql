@@ -1,4 +1,4 @@
-from pdsql.config import Configuration
+from dfsql.config import Configuration
 
 pd = None
 if Configuration.USE_MODIN:

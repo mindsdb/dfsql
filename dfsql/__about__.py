@@ -1,10 +1,10 @@
-__title__ = 'pdsql'
-__package_name__ = 'pdsql'
+__title__ = 'dfsql'
+__package_name__ = 'dfsql'
 __version__ = '0.2.0'
 __description__ = "SQL interface to Pandas and Modin"
 __email__ = "jorge@mindsdb.com"
 __author__ = 'MindsDB Inc'
-__github__ = 'https://github.com/mindsdb/pdsql'
-__pypi__ = 'https://pypi.org/project/pdsql'
+__github__ = 'https://github.com/mindsdb/dfsql'
+__pypi__ = 'https://pypi.org/project/dfsql'
 __license__ = 'GPL-3.0'
 __copyright__ = 'Copyright 2020- mindsdb'

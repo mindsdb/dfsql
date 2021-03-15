@@ -1,13 +1,13 @@
 import pytest
-from pdsql.data_sources import DataSource
-from pdsql.engine import pd
+from dfsql.data_sources import DataSource
+from dfsql.engine import pd
 import numpy as np
 import os
 import json
 
-from pdsql.exceptions import QueryExecutionException
-from pdsql.functions import AggregateFunction
-from pdsql.table import Table
+from dfsql.exceptions import QueryExecutionException
+from dfsql.functions import AggregateFunction
+from dfsql.table import Table
 
 
 @pytest.fixture()
