@@ -69,3 +69,15 @@ class TestExtensions:
             values_right = query_result.dropna().values
 
             assert (values_left == values_right).all()
+
+    def test_df_sql_groupby(self, config, engine, csv_file):
+        import dfsql.extensions
+
+        df = pd.read_csv(csv_file)
+        expected_out = df['survived'].nunique()
+        sql = "SELECT COUNT(DISTINCT survived) as uniq_survived"
+
+        query_result = df.sql(sql)
+
+        assert query_result == expected_out
+

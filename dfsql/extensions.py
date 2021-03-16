@@ -1,3 +1,4 @@
+import re
 from dfsql import sql_query
 from dfsql.engine import pd as pd_engine
 import warnings
@@ -15,29 +16,38 @@ class SQLAccessor:
         sql_query = sql_query.lower()
         sql_query = sql_query.replace("(", " ( ").replace(")", " ) ")
         insert_positions = []
-        for index, value in enumerate(sql_query):
-            if sql_query[index:index + (len("select"))] == "select":
-                select_pos = index
+        for m in re.finditer('select', sql_query):
+            select_pos = m.start()
 
-                str_after_select = sql_query[select_pos:]
-                words_after_select = str_after_select.split(' ')
+            str_after_select = sql_query[select_pos:]
+            words_after_select = str_after_select.split(' ')
 
-                keywords = ['where', 'group', 'having', 'order', 'limit', 'offset', ')']
-                need_to_insert_from = True
-                insert_pos = len(str_after_select)
-                for word in words_after_select:
-                    if word == 'from':
-                        need_to_insert_from = False
-                        break
+            keywords = ['where', 'group', 'having', 'order', 'limit', 'offset']
+            need_to_insert_from = True
+            insert_pos = len(str_after_select)
 
-                    if word in keywords:
+            parentheses_count = 0
+            for word in words_after_select:
+                if word == 'from':
+                    need_to_insert_from = False
+                    break
+
+                if word == '(':
+                    parentheses_count += 1
+                elif word == ')':
+                    if parentheses_count == 0:
                         insert_pos = str_after_select.find(word)
                         break
-                if not need_to_insert_from:
-                    continue
-                insert_pos = select_pos + insert_pos
+                    else:
+                        parentheses_count -= 1
+                if word in keywords:
+                    insert_pos = str_after_select.find(word)
+                    break
+            if not need_to_insert_from:
+                continue
+            insert_pos = select_pos + insert_pos
 
-                insert_positions.append(insert_pos)
+            insert_positions.append(insert_pos)
         insert_text = f' from {table_name} '
         new_query = ''
         last_pos = None
@@ -51,7 +61,8 @@ class SQLAccessor:
     def __call__(self, sql, *args, **kwargs):
         table_name = 'temp'
         sql = self.maybe_add_from_to_query(sql, table_name=table_name)
-        return sql_query(sql, *args, from_tables={table_name: self._obj}, **kwargs)
+        kwargs.update({table_name: self._obj})
+        return sql_query(sql, *args, **kwargs)
 
 try:
     import modin.pandas as mpd
