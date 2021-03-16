@@ -12,14 +12,14 @@ class TestQuickInterface:
 
         sql = "SELECT passenger_id FROM whatever_table"
 
-        query_result = sql_query(sql, from_tables={'whatever_table': df})
+        query_result = sql_query(sql, whatever_table=df)
         assert query_result.name == 'passenger_id'
         values_left = df['passenger_id'].values
         values_right = query_result.values
         assert (values_left == values_right).all()
 
         # Run query again to ensure that everything was cleaned up properly
-        query_result = sql_query(sql, from_tables={'whatever_table': df})
+        query_result = sql_query(sql, whatever_table=df)
         assert query_result.name == 'passenger_id'
         values_left = df['passenger_id'].values
         values_right = query_result.values
@@ -34,7 +34,7 @@ class TestQuickInterface:
 
         # Use one table for self join
         sql = "SELECT passenger_id, p_class FROM titanic as t1 INNER JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
-        query_result = sql_query(sql, from_tables={'titanic': df})
+        query_result = sql_query(sql, titanic=df)
 
         assert list(query_result.columns) == ['passenger_id', 'p_class']
         values_left = merge_df[['passenger_id', 'p_class']].values
@@ -43,7 +43,7 @@ class TestQuickInterface:
 
         # Use two separate tables
         sql = "SELECT passenger_id, p_class FROM t1 INNER JOIN t2 ON t1.passenger_id = t2.p_class"
-        query_result = sql_query(sql, from_tables={'t1': df, 't2': df})
+        query_result = sql_query(sql, t1=df, t2=df)
 
         assert list(query_result.columns) == ['passenger_id', 'p_class']
         values_left = merge_df[['passenger_id', 'p_class']].values
@@ -56,7 +56,7 @@ class TestQuickInterface:
 
         sql = "SELECT passenger_id FROM whatever_table INNER JOIN missing_table ON id"
         with pytest.raises(QueryExecutionException):
-            sql_query(sql, from_tables={'whatever_table': df})
+            sql_query(sql, whatever_table=df)
 
     def test_error_wrong_table_name(self, csv_file):
         from dfsql.extensions import sql_query
@@ -66,10 +66,10 @@ class TestQuickInterface:
         sql = "SELECT passenger_id FROM whatever_table"
 
         with pytest.raises(dfsqlException):
-            sql_query(sql, from_tables={'wrong_table': df})
+            sql_query(sql, wrong_table=df)
 
         # Run again to make sure it works after a failure
-        query_result = sql_query(sql, from_tables={'whatever_table': df})
+        query_result = sql_query(sql, whatever_table=df)
         assert query_result.name == 'passenger_id'
         values_left = df['passenger_id'].values
         values_right = query_result.values
@@ -83,10 +83,10 @@ class TestQuickInterface:
             sql_query(sql, None)
 
         with pytest.raises(dfsqlException):
-            sql_query(sql, from_tables={})
+            sql_query(sql, something={})
 
         with pytest.raises(dfsqlException):
-            sql_query(sql, from_tables=[])
+            sql_query(sql, something=[])
 
     def test_error_extra_tables(self, csv_file):
         from dfsql.extensions import sql_query
@@ -94,7 +94,7 @@ class TestQuickInterface:
         sql = "SELECT passenger_id FROM whatever_table"
 
         with pytest.raises(dfsqlException):
-            sql_query(sql, from_tables={'whatever_table': df, 'another_table': df})
+            sql_query(sql, whatever_table=df, extra_table=df)
 
     def test_custom_functions(self, csv_file):
         from dfsql.extensions import sql_query
@@ -103,7 +103,7 @@ class TestQuickInterface:
 
         func = lambda x: x.value_counts(dropna=False).index[0]
 
-        query_result = sql_query(sql, from_tables={'titanic': df}, custom_functions={'mode': func})
+        query_result = sql_query(sql, titanic=df, custom_functions={'mode': func})
 
         df = df.groupby(['sex']).agg({'survived': func}).reset_index()
         df.columns = ['sex', 'mode_survived']
