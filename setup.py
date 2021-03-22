@@ -22,9 +22,12 @@ setuptools.setup(
     extras_require=dict(
         test=['pytest>=5.4.3', 'requests >= 2.22.0', 'modin[all]>=0.8.0'],
         modin=['modin[all]>=0.8.0']),
-    classifiers=(
+    classifiers=[
         "Programming Language :: Python :: 3",
-        "Operating System :: OS Independent",
-    ),
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Operating System :: POSIX :: Linux",
+    ],
     python_requires=">=3.7"
 )
