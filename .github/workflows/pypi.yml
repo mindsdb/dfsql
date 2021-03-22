@@ -35,7 +35,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.9
+        python-version: 3.7
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -43,7 +43,7 @@ jobs:
     - name: Build manylinux Python wheels
       uses: RalfG/python-wheels-manylinux-build@v0.3.3-manylinux2010_x86_64
       with:
-        python-versions: 'cp37-cp37m cp38-cp38m cp39-cp39m'
+        python-versions: 'cp37-cp37m'
         build-requirements: 'pglast pandas'
     - name: Publish to PyPI
       env:
