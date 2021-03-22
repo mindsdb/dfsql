@@ -45,5 +45,5 @@ jobs:
         TWINE_USERNAME:  __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
-        python setup.py sdist
+        python setup.py bdist_wheel --plat-name=linux-x86_64
         twine upload dist/*
