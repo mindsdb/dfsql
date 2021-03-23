@@ -31,7 +31,6 @@ def config(monkeypatch):
         pass
 
     TestConfig.USE_MODIN = True
-    TestConfig.MODIN_ENGINE = 'pandas'
 
     monkeypatch.setattr('dfsql.config.Configuration', TestConfig)
     return TestConfig
