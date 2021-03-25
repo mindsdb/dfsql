@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - stable
+      - manylinux
 
 jobs:
   test:
@@ -40,7 +41,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install setuptools wheel twine
-    - name: Build manylinux wheels
+    - name: Build wheels
       run: |
         SETUP_PLAT_NAME=linux python3 setup.py sdist bdist_wheel --plat-name manylinux1_x86_64
         SETUP_PLAT_NAME=linux python3 setup.py sdist bdist_wheel --plat-name manylinux1_i686
@@ -50,3 +51,23 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
         twine upload dist/*manylinux*.whl
+
+  test-clean-install-ubuntu:
+    needs: [ deploy_pypi ]
+    runs-on: ubuntu-latest
+    name: test-clean-install-ubuntu
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.7.x"
+          architecture: "x64"
+      - name: Clean install and run
+        shell: bash -l {0}
+        run: |
+          python -m pip install -e .[all]
+          python -c "from dfsql import sql_query"
+
+
