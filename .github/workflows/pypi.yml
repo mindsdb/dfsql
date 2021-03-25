@@ -50,7 +50,7 @@ jobs:
         TWINE_USERNAME:  __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
-        twine upload dist/*manylinux*.whl
+        twine --skip-existing upload dist/*manylinux*.whl
 
   test-clean-install-ubuntu:
     needs: [ deploy_pypi ]
