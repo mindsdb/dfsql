@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.7,3.8]
+        python-version: [3.7, 3.8]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -40,14 +40,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install setuptools wheel twine
-    - name: Build manylinux Python wheels
-      uses: RalfG/python-wheels-manylinux-build@v0.3.3-manylinux2010_x86_64
-      with:
-        python-versions: 'cp37-cp37m'
-        build-requirements: 'pglast pandas'
+    - name: Build manylinux wheels
+      run: |
+        SETUP_PLAT_NAME=linux python3 setup.py sdist bdist_wheel --plat-name manylinux1_x86_64
+        SETUP_PLAT_NAME=linux python3 setup.py sdist bdist_wheel --plat-name manylinux1_i686
     - name: Publish to PyPI
       env:
         TWINE_USERNAME:  __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
-        twine upload dist/*-manylinux*.whl
+        twine upload dist/*manylinux*.whl
