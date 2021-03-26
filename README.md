@@ -43,7 +43,7 @@ Python 3.8.5 (default, Jan 27 2021, 15:41:15)
 Type "help", "copyright", "credits" or "license" for more information.
 >>> import dfsql
 >>> dfsql.config.Configuration.as_dict()
-{'USE_MODIN': 0, 'MODIN_ENGINE': 'dask'}
+{'USE_MODIN': 0}
 ```
 
 
