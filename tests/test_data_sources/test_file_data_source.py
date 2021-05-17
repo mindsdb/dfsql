@@ -98,7 +98,7 @@ class TestDataSource:
         assert preprocessing_dict['rename']['Ticket Number '] == 'ticket_number'
 
     def test_simple_select(self, data_source):
-        sql = "SELECT 1 as result"
+        sql = "SELECT 1 AS result"
         assert data_source.query(sql) == 1
 
         sql = "SELECT 1"
@@ -154,7 +154,7 @@ class TestDataSource:
     def test_select_column_alias(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
 
-        sql = "SELECT passenger_id as p1 FROM titanic"
+        sql = "SELECT passenger_id AS p1 FROM titanic"
 
         query_result = data_source.query(sql)
 
@@ -198,7 +198,7 @@ class TestDataSource:
         df = pd.read_csv(csv_file)
         df['const'] = 1
 
-        sql = "SELECT passenger_id, 1 as const FROM titanic"
+        sql = "SELECT passenger_id, 1 AS const FROM titanic"
 
         query_result = data_source.query(sql)
 
@@ -213,7 +213,7 @@ class TestDataSource:
         df['col_sum'] = df['passenger_id'] + df['survived']
         df['col_diff'] = df['passenger_id'] - df['survived']
         df = df[['col_sum', 'col_diff']]
-        sql = "SELECT passenger_id + survived as col_sum, passenger_id - survived as col_diff FROM titanic"
+        sql = "SELECT passenger_id + survived AS col_sum, passenger_id - survived AS col_diff FROM titanic"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['col_sum', 'col_diff']
         values_left = df.values
@@ -240,10 +240,10 @@ class TestDataSource:
         assert (values_left == values_right).all()
 
         out_df = df[df.survived == 1]
-        out_df = out_df[out_df.sex != 'male']
+        out_df = out_df[out_df.sex != "male"]
         out_df = out_df[out_df.p_class > 0]
         out_df = out_df[['passenger_id', 'survived']]
-        sql = "SELECT passenger_id, survived FROM titanic WHERE survived = 1 AND sex != 'male' AND p_class > 0"
+        sql = "SELECT passenger_id, survived FROM titanic WHERE survived = 1 AND sex != \"male\" AND p_class > 0"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['passenger_id', 'survived']
         values_left = out_df[['passenger_id', 'survived']].values
@@ -260,8 +260,8 @@ class TestDataSource:
     def test_where_operator_order(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
         # And surviving females or children
-        out_df = df[((df.survived == 1) & (df.sex == 'female')) | (df.p_class < 1)][['passenger_id', 'survived', 'sex', 'age']]
-        sql = "SELECT passenger_id, survived, sex, age FROM titanic WHERE survived = 1 AND sex = 'female' OR p_class < 1"
+        out_df = df[((df.survived == 1) & (df.sex == "female")) | (df.p_class < 1)][['passenger_id', 'survived', 'sex', 'age']]
+        sql = "SELECT passenger_id, survived, sex, age FROM titanic WHERE survived = 1 AND sex = \"female\" OR p_class < 1"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['passenger_id', 'survived', 'sex', 'age']
         values_left = out_df.values
@@ -269,9 +269,9 @@ class TestDataSource:
         assert values_left.shape == values_right.shape
         assert (values_left == values_right).all()
 
-        out_df = df[(df.survived == 1) & ((df.sex == 'female') | (df.p_class < 1))][
+        out_df = df[(df.survived == 1) & ((df.sex == "female") | (df.p_class < 1))][
             ['passenger_id', 'survived', 'sex', 'age']]
-        sql = "SELECT passenger_id, survived, sex, age FROM titanic WHERE survived = 1 AND (sex = 'female' OR p_class < 1)"
+        sql = "SELECT passenger_id, survived, sex, age FROM titanic WHERE survived = 1 AND (sex = \"female\" OR p_class < 1)"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['passenger_id', 'survived', 'sex', 'age']
         values_left = out_df.values
@@ -281,8 +281,8 @@ class TestDataSource:
 
     def test_select_where_string(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
-        out_df = df[df['sex'] == 'male']['passenger_id']
-        sql = "SELECT passenger_id FROM titanic WHERE sex = 'male'"
+        out_df = df[df['sex'] == "male"]['passenger_id']
+        sql = "SELECT passenger_id FROM titanic WHERE sex = \"male\""
         query_result = data_source.query(sql)
         assert query_result.name == 'passenger_id'
         values_left = out_df.values
@@ -291,7 +291,7 @@ class TestDataSource:
         assert (values_left == values_right).all()
 
     def test_select_groupby_wrong_column(self, csv_file, data_source):
-        sql = "SELECT survived, p_class, count(passenger_id) as count_passenger_id FROM titanic GROUP BY survived"
+        sql = "SELECT survived, p_class, count(passenger_id) AS count_passenger_id FROM titanic GROUP BY survived"
         with pytest.raises(QueryExecutionException):
             query_result = data_source.query(sql)
 
@@ -299,19 +299,19 @@ class TestDataSource:
         df = pd.read_csv(csv_file)
 
         tdf = pd.DataFrame({'col_sum': [df['passenger_id'].sum()], 'col_avg': [df['passenger_id'].mean()]})
-        sql = "SELECT sum(passenger_id) as col_sum, avg(passenger_id) as col_avg FROM titanic"
+        sql = "SELECT sum(passenger_id) AS col_sum, avg(passenger_id) AS col_avg FROM titanic"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['col_sum', 'col_avg']
         values_left = tdf.values
         values_right = query_result.values
         assert (values_left == values_right).all().all()
 
-        sql = "SELECT count(passenger_id) as count1 FROM titanic"
+        sql = "SELECT count(passenger_id) AS count1 FROM titanic"
         query_result = data_source.query(sql)
         assert (query_result == df['passenger_id'].count())
 
     def test_groupby(self, csv_file, data_source):
-        sql = "SELECT survived, p_class, count(passenger_id) as count_passenger_id FROM titanic GROUP BY survived, p_class HAVING survived = 1"
+        sql = "SELECT survived, p_class, count(passenger_id) AS count_passenger_id FROM titanic GROUP BY survived, p_class HAVING survived = 1"
         query_result = data_source.query(sql)
 
         df = pd.read_csv(csv_file)
@@ -340,7 +340,7 @@ class TestDataSource:
         assert (values_left == values_right).all().all()
 
     def test_groupby_custom_aggregate_func(self, csv_file, data_source):
-        sql = "SELECT sex, mode(survived) as mode_survived FROM titanic GROUP BY sex"
+        sql = "SELECT sex, mode(survived) AS mode_survived FROM titanic GROUP BY sex"
 
         class ModeFunc(AggregateFunction):
             def get_output(self, args):
@@ -361,7 +361,7 @@ class TestDataSource:
         assert (values_left == values_right).all().all()
 
     def test_groupby_register_aggregate_func(self, csv_file, data_source):
-        sql = "SELECT sex, mode(survived) as mode_survived FROM titanic GROUP BY sex"
+        sql = "SELECT sex, mode(survived) AS mode_survived FROM titanic GROUP BY sex"
 
         func = lambda x: x.value_counts(dropna=False).index[0]
         data_source.register_function('mode', func)
@@ -379,7 +379,7 @@ class TestDataSource:
         assert (values_left == values_right).all().all()
 
     def test_groupby_register_two_aggregate_funcs(self, csv_file, data_source):
-        sql = "SELECT sex, mode1(survived) as mode1_survived, mode2(survived) as mode2_survived FROM titanic GROUP BY sex"
+        sql = "SELECT sex, mode1(survived) AS mode1_survived, mode2(survived) AS mode2_survived FROM titanic GROUP BY sex"
 
         func = lambda x: x.value_counts(dropna=False).index[0]
         data_source.register_function('mode1', func)
@@ -403,7 +403,7 @@ class TestDataSource:
         df = df.groupby(['survived', 'p_class']).agg({'passenger_id': 'count'}).reset_index()
         df.columns = ['survived', 'p_class', 'count_passenger_id']
 
-        sql = "SELECT survived, p_class, count(passenger_id) as count_passenger_id FROM titanic GROUP BY survived, p_class"
+        sql = "SELECT survived, p_class, count(passenger_id) AS count_passenger_id FROM titanic GROUP BY survived, p_class"
         query_result = data_source.query(sql)
         assert (query_result.columns == df.columns).all()
         assert query_result.shape == df.shape
@@ -427,8 +427,8 @@ class TestDataSource:
         df = pd.read_csv(csv_file)
         merge_df = pd.merge(df, df, how='inner', left_on=['passenger_id'], right_on=['p_class'])[['passenger_id_x', 'p_class_y']]
         merge_df.columns = ['passenger_id', 'p_class']
-        sqls = ["SELECT passenger_id, p_class FROM titanic as t1 INNER JOIN titanic as t2 ON t1.passenger_id = t2.p_class",
-                "SELECT passenger_id, p_class FROM titanic as t1 INNER JOIN titanic as t2 ON t2.p_class = t1.passenger_id"]
+        sqls = ["SELECT passenger_id, p_class FROM titanic AS t1 INNER JOIN titanic AS t2 ON t1.passenger_id = t2.p_class",
+                "SELECT passenger_id, p_class FROM titanic AS t1 INNER JOIN titanic AS t2 ON t2.p_class = t1.passenger_id"]
         for sql in sqls:
             query_result = data_source.query(sql)
             assert list(query_result.columns) == ['passenger_id', 'p_class']
@@ -469,14 +469,14 @@ class TestDataSource:
         df = pd.read_csv(csv_file)
         merge_df = pd.merge(df, df, how='inner', left_on=['passenger_id'], right_on=['p_class'])[['passenger_id_x', 'p_class_y', 'sex_x']]
         merge_df.columns = ['passenger_id', 'p_class', 't1.sex']
-        sql = "SELECT passenger_id, p_class, t1.sex FROM titanic as t1 INNER JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        sql = "SELECT passenger_id, p_class, t1.sex FROM titanic AS t1 INNER JOIN titanic AS t2 ON t1.passenger_id = t2.p_class"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['passenger_id', 'p_class', 't1.sex']
         values_left = merge_df.values
         values_right = query_result.values
         assert (values_left == values_right).all().all()
 
-        sql = "SELECT passenger_id, p_class, t1.sex as sex FROM titanic as t1 INNER JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        sql = "SELECT passenger_id, p_class, t1.sex AS sex FROM titanic AS t1 INNER JOIN titanic AS t2 ON t1.passenger_id = t2.p_class"
         query_result = data_source.query(sql)
         assert list(query_result.columns) == ['passenger_id', 'p_class', 'sex']
         values_left = merge_df.values
@@ -487,7 +487,7 @@ class TestDataSource:
         df = pd.read_csv(csv_file)
         merge_df = pd.merge(df, df, how='left', left_on=['passenger_id'], right_on=['p_class'])[['passenger_id_x', 'p_class_y']]
         merge_df.columns = ['passenger_id', 'p_class']
-        sql = "SELECT passenger_id, p_class FROM titanic as t1 LEFT JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        sql = "SELECT passenger_id, p_class FROM titanic AS t1 LEFT JOIN titanic AS t2 ON t1.passenger_id = t2.p_class"
         query_result = data_source.query(sql)
         assert merge_df.shape == query_result.shape
         assert list(query_result.columns) == ['passenger_id', 'p_class']
@@ -498,7 +498,7 @@ class TestDataSource:
         merge_df = pd.merge(df, df, how='right', left_on=['passenger_id'], right_on=['p_class'])[
             ['passenger_id_x', 'p_class_y']]
         merge_df.columns = ['passenger_id', 'p_class']
-        sql = "SELECT passenger_id, p_class FROM titanic as t1 RIGHT JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        sql = "SELECT passenger_id, p_class FROM titanic AS t1 RIGHT JOIN titanic AS t2 ON t1.passenger_id = t2.p_class"
         query_result = data_source.query(sql)
         assert merge_df.shape == query_result.shape
         assert list(query_result.columns) == ['passenger_id', 'p_class']
@@ -509,7 +509,7 @@ class TestDataSource:
         merge_df = pd.merge(df, df, how='outer', left_on=['passenger_id'], right_on=['p_class'])[
             ['passenger_id_x', 'p_class_y']]
         merge_df.columns = ['passenger_id', 'p_class']
-        sql = "SELECT passenger_id, p_class FROM titanic as t1 FULL JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        sql = "SELECT passenger_id, p_class FROM titanic AS t1 FULL JOIN titanic AS t2 ON t1.passenger_id = t2.p_class"
         query_result = data_source.query(sql)
         assert merge_df.shape == query_result.shape
         assert list(query_result.columns) == ['passenger_id', 'p_class']
@@ -518,7 +518,7 @@ class TestDataSource:
         assert (values_left == values_right).all().all()
 
     def test_subquery_simple(self, csv_file, data_source):
-        sql = "SELECT * FROM (SELECT * FROM titanic) as t1"
+        sql = "SELECT * FROM (SELECT * FROM titanic) AS t1"
         query_result = data_source.query(sql)
         df = pd.read_csv(csv_file)
 
@@ -528,7 +528,7 @@ class TestDataSource:
         assert (values_left == values_right).all()
 
     def test_subquery_groupby(self, csv_file, data_source):
-        sql = "SELECT survived, p_class, count(passenger_id) as count FROM (SELECT * FROM titanic WHERE survived = 1) as t1 GROUP BY survived, p_class"
+        sql = "SELECT survived, p_class, count(passenger_id) AS count FROM (SELECT * FROM titanic WHERE survived = 1) AS t1 GROUP BY survived, p_class"
         query_result = data_source.query(sql)
 
         df = pd.read_csv(csv_file)
@@ -554,7 +554,7 @@ class TestDataSource:
         assert (values_left == values_right).all()
 
     def test_subquery_select(self, csv_file, data_source):
-        sql = "SELECT survived, (SELECT passenger_id FROM titanic LIMIT 1) as pid FROM titanic"
+        sql = "SELECT survived, (SELECT passenger_id FROM titanic LIMIT 1) AS pid FROM titanic"
         query_result = data_source.query(sql)
         assert (query_result['pid'] == 1).all()
 
@@ -568,20 +568,20 @@ class TestDataSource:
         assert query_result.empty
 
     def test_cast(self, csv_file, data_source):
-        sql = "SELECT CAST (4 as str) as result"
+        sql = "SELECT CAST (4 AS str) AS result"
         query_result = data_source.query(sql)
         assert query_result == "4" and isinstance(query_result, str)
 
-        sql = "SELECT CAST ('4' as int) as result"
+        sql = "SELECT CAST (\"4\" AS int) AS result"
         query_result = data_source.query(sql)
         assert query_result == 4 and isinstance(query_result, np.int64)
 
-        sql = "SELECT CAST ('4' as float) as result"
+        sql = "SELECT CAST (\"4\" AS float) AS result"
         query_result = data_source.query(sql)
         assert query_result == 4.0 and isinstance(query_result, np.float64)
 
     def test_count_distinct(self, csv_file, data_source):
-        sql = "SELECT COUNT(DISTINCT survived) as uniq_survived FROM titanic"
+        sql = "SELECT COUNT(DISTINCT survived) AS uniq_survived FROM titanic"
         query_result = data_source.query(sql)
 
         assert query_result == 2
@@ -589,8 +589,8 @@ class TestDataSource:
     def test_large_where_and(self, data_source_googleplay, googleplay_csv):
         df = pd.read_csv(googleplay_csv)
 
-        out_df = df[(df.Category == 'FAMILY') & (df.Price == '0')][['App', 'Category']]
-        sql = "SELECT app, category FROM googleplaystore WHERE category = 'FAMILY' AND price = '0'"
+        out_df = df[(df.Category == "FAMILY") & (df.Price == '0')][['App', 'Category']]
+        sql = "SELECT app, category FROM googleplaystore WHERE category = \"FAMILY\" AND price = \"0\""
         query_result = data_source_googleplay.query(sql)
 
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
@@ -598,8 +598,8 @@ class TestDataSource:
     def test_large_not(self, data_source_googleplay, googleplay_csv):
         df = pd.read_csv(googleplay_csv)
 
-        out_df = df[~(df.Category == 'FAMILY')][['App', 'Category']]
-        sql = "SELECT app, category FROM googleplaystore WHERE NOT category = 'FAMILY'"
+        out_df = df[~(df.Category == "FAMILY")][['App', 'Category']]
+        sql = "SELECT app, category FROM googleplaystore WHERE NOT category = \"FAMILY\""
         query_result = data_source_googleplay.query(sql)
 
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
@@ -635,16 +635,16 @@ class TestDataSource:
         out_df = df.groupby(['Category']).agg({'App': 'count'}).reset_index()
         out_df.columns = ['category', 'count_app']
         out_df = out_df.sort_values(by=['count_app'], ascending=[False])[:10]
-        sql = "SELECT category, count(app) as count_app FROM googleplaystore GROUP BY category ORDER BY count_app DESC LIMIT 10"
+        sql = "SELECT category, count(app) AS count_app FROM googleplaystore GROUP BY category ORDER BY count_app DESC LIMIT 10"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
 
     def test_string_concat(self, data_source, csv_file):
-        sql = "SELECT 'a' || 'b'"
+        sql = "SELECT \"a\" || \"b\""
         query_result = data_source.query(sql)
         assert query_result == 'ab'
 
-        sql = "SELECT 'b' || 'a'"
+        sql = "SELECT \"b\" || \"a\""
         query_result = data_source.query(sql)
         assert query_result == 'ba'
 
@@ -661,21 +661,21 @@ class TestDataSource:
         assert (query_result.values == out_series.values).all()
 
         out_series = df['name'] + 'a'
-        sql = "SELECT name || 'a' FROM titanic"
+        sql = "SELECT name || \"a\" FROM titanic"
         query_result = data_source.query(sql)
         assert (query_result.values == out_series.values).all()
 
-        out_series = 'a' + df['name']
-        sql = "SELECT 'a' || name FROM titanic"
+        out_series = "a" + df['name']
+        sql = "SELECT \"a\" || name FROM titanic"
         query_result = data_source.query(sql)
         assert (query_result.values == out_series.values).all()
 
     def test_string_upper_lower(self, data_source, csv_file):
-        sql = "SELECT upper('a')"
+        sql = "SELECT upper(\"a\")"
         query_result = data_source.query(sql)
         assert query_result == 'A'
 
-        sql = "SELECT lower('A')"
+        sql = "SELECT lower(\"A\")"
         query_result = data_source.query(sql)
         assert query_result == 'a'
 
@@ -691,21 +691,21 @@ class TestDataSource:
         assert (query_result.values == out_series.values).all()
 
     def test_string_like(self, data_source, csv_file):
-        sql = "SELECT 'a' LIKE '.*' "
+        sql = "SELECT \"a\" LIKE \".*\" "
         query_result = data_source.query(sql)
         assert query_result == True
 
         df = pd.read_csv(csv_file)
-        sql = "SELECT name FROM titanic WHERE name LIKE '.*'"
+        sql = "SELECT name FROM titanic WHERE name LIKE \".*\""
         query_result = data_source.query(sql)
         assert (query_result.values == df['name'].values).all()
 
-        sql = "SELECT name FROM titanic WHERE name LIKE '.*Owen.*'"
+        sql = "SELECT name FROM titanic WHERE name LIKE \".*Owen.*\""
         query_result = data_source.query(sql)
         assert  query_result == 'Braund, Mr. Owen Harris'
 
     def test_in(self, data_source, csv_file):
-        sql = "SELECT name FROM titanic WHERE name IN ('Braund, Mr. Owen Harris', 'Cumings, Mrs. John Bradley (Florence Briggs Thayer)')"
+        sql = "SELECT name FROM titanic WHERE name IN (\"Braund, Mr. Owen Harris\", \"Cumings, Mrs. John Bradley (Florence Briggs Thayer)\")"
         query_result = data_source.query(sql)
         assert (query_result.values == np.array(['Braund, Mr. Owen Harris', 'Cumings, Mrs. John Bradley (Florence Briggs Thayer)'])).all()
 
@@ -714,7 +714,7 @@ class TestDataSource:
             return x + '_custom_addition'
 
         data_source.register_function('custom', custom)
-        sql = "SELECT custom('a')"
+        sql = "SELECT custom(\"a\")"
         query_result = data_source.query(sql)
         assert query_result == 'a_custom_addition'
 

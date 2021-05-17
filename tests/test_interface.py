@@ -33,7 +33,7 @@ class TestQuickInterface:
         merge_df.columns = ['passenger_id', 'p_class']
 
         # Use one table for self join
-        sql = "SELECT passenger_id, p_class FROM titanic as t1 INNER JOIN titanic as t2 ON t1.passenger_id = t2.p_class"
+        sql = "SELECT passenger_id, p_class FROM titanic AS t1 INNER JOIN titanic AS t2 ON t1.passenger_id = t2.p_class"
         query_result = sql_query(sql, titanic=df)
 
         assert list(query_result.columns) == ['passenger_id', 'p_class']
@@ -99,7 +99,7 @@ class TestQuickInterface:
     def test_custom_functions(self, csv_file):
         from dfsql.extensions import sql_query
         df = pd.read_csv(csv_file)
-        sql = "SELECT sex, mode(survived) as mode_survived FROM titanic GROUP BY sex"
+        sql = "SELECT sex, mode(survived) AS mode_survived FROM titanic GROUP BY sex"
 
         func = lambda x: x.value_counts(dropna=False).index[0]
 

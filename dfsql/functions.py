@@ -246,7 +246,7 @@ class StringUpper(BaseFunction, OneArgMixin, StringInputMixin, StringOutputMixin
 
 
 class Like(BaseFunction, TwoArgsMixin, StringInputMixin, BoolOutputMixin):
-    name = "~~"
+    name = "like"
 
     def get_output(self, args):
         def matcher(inp, pattern):

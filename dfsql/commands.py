@@ -123,3 +123,11 @@ class ShowTablesCommand(Command):
 
 
 command_types = [CreateTableCommand, DropTableCommand, ShowTablesCommand]
+
+
+def try_parse_command(sql_query):
+    for command_type in command_types:
+        command = command_type.from_string(sql_query)
+
+        if command:
+            return command
