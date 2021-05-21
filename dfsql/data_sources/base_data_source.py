@@ -5,9 +5,9 @@ import json
 from dfsql.cache import  MemoryCache
 from dfsql.exceptions import QueryExecutionException
 from dfsql.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
-from dfsql.sql_parser import (try_parse_command, parse_sql, Select, Identifier, Constant, Operation, Star,
-                                    Function,
-                                    AggregateFunction as ParserAggregateFunction, Join, BinaryOperation, TypeCast, List)
+from dfsql.commands import try_parse_command
+from mindsdb_sql import parse_sql
+from mindsdb_sql.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast, Tuple)
 from dfsql.table import Table, FileTable
 
 
@@ -146,7 +146,7 @@ class DataSource:
         command = try_parse_command(sql)
         if command:
             return self.execute_command(command)
-        query = parse_sql(sql, custom_functions=self.custom_functions)
+        query = parse_sql(sql)
         return self.execute_query(query)
 
     def execute_table_identifier(self, query):
@@ -222,7 +222,7 @@ class DataSource:
         scalar_values = []
         # Expand star
         for i, target in enumerate(targets):
-            if isinstance(target, Star):
+            if isinstance(target, Identifier) and target.value == '*':
                 targets = targets[:i] + [Identifier(colname) for colname in
                                                      source_df.columns] + targets[i + 1:]
                 break
@@ -275,9 +275,12 @@ class DataSource:
                 assert isinstance(arg, Identifier)
                 arg = arg.value
 
-                modin_op = self.custom_functions.get(target.op.lower())
+                func_name = target.op.lower()
+                if target.distinct:
+                    func_name = f'{target.op.lower()}_distinct'
+                modin_op = self.custom_functions.get(func_name)
                 if not modin_op:
-                    modin_op = get_aggregation_operation(target.op.lower())
+                    modin_op = get_aggregation_operation(func_name)
 
                 agg[col_name] = (arg, modin_op)
             else:
@@ -314,9 +317,9 @@ class DataSource:
     def execute_select(self, query):
         from_table = []
         if query.from_table:
-            from_table = [self.execute_from_query(sub_q) for sub_q in query.from_table]
+            from_table = self.execute_from_query(query.from_table)
 
-        source_df = from_table[0] if len(from_table) >= 1 else None
+        source_df = from_table
 
         if query.where:
             index = self.execute_operation(query.where, source_df)
@@ -328,7 +331,7 @@ class DataSource:
             non_agg_functions = []
             agg_functions = []
             for target in query.targets:
-                if isinstance(target, ParserAggregateFunction):
+                if isinstance(target, Function) and target.op.lower() in AGGREGATE_MAPPING:
                     agg_functions.append(target)
                 else:
                     non_agg_functions.append(target)
@@ -445,7 +448,7 @@ class DataSource:
             return self.execute_select(query)
         elif isinstance(query, Constant):
             return self.execute_constant(query)
-        elif isinstance(query, List):
+        elif isinstance(query, Tuple):
             return pd.Series([self.execute_query(item) for item in query.items])
         else:
             raise (QueryExecutionException(f'No idea how to execute query statement {type(query)}'))
