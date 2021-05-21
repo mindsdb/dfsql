@@ -15,7 +15,7 @@ def sql_query(sql, *args, ds_kwargs=None, custom_functions=None, **kwargs):
     if not from_tables or not isinstance(from_tables, dict):
         raise dfsqlException(f"Wrong from_tables value. Expected to be a dict of table names and dataframes, got: {str(from_tables)}")
 
-    tmpdir = os.path.join(tempfile.gettempdir(), 'dfsql_temp_' + time.ctime())
+    tmpdir = os.path.join(tempfile.gettempdir(), 'dfsql_temp_' + str(round(time.time())))
     ds = DataSource(*args, metadata_dir=str(tmpdir), custom_functions=custom_functions, **ds_args)
     try:
         for table_name, dataframe in from_tables.items():
