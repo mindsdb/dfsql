@@ -8,7 +8,7 @@ from dfsql.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
 from dfsql.commands import try_parse_command
 from mindsdb_sql import parse_sql
 from mindsdb_sql.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast, Tuple)
-from dfsql.table import Table, FileTable
+from dfsql.table import Table, FileTable, preprocess_column_name
 
 
 def get_modin_operation(sql_op):
@@ -173,20 +173,30 @@ class DataSource:
         return result
 
     def execute_column_identifier(self, query, df):
-        scope = self.query_scope
+        name_components = query.value.split('.')
 
-        full_column_name = query.value
-        if full_column_name in df.columns:
-            return df[full_column_name]
+        if len(name_components) == 1:
+            full_column_name = preprocess_column_name(query.value)
+            if full_column_name in df.columns:
+                return df[full_column_name]
+        elif len(name_components) == 2:
+            table_name, column_name = name_components
+            column_name = preprocess_column_name(column_name)
 
-        if len(full_column_name.split('.')) > 1:
-            table_name, column_name = full_column_name.split('.')
-            if table_name and not table_name in scope:
+            # If it's a join
+            join_column_name = f'{table_name}.{column_name}'
+            if join_column_name in df:
+                return df[join_column_name]
+
+            if table_name and not table_name in self.query_scope:
                 raise QueryExecutionException(f"Table name {table_name} not in scope.")
+            table = self.query_scope[table_name]
 
-            if column_name in df.columns:
-                return df[column_name]
-        raise QueryExecutionException(f"Column {full_column_name} not found.")
+            if column_name in table.columns:
+                return table[column_name]
+        else:
+            raise QueryExecutionException(f"Too many name components: {query.value}")
+        raise QueryExecutionException(f"Column {query.value} not found.")
 
     def execute_type_cast(self, query, df):
         type_name = query.type_name

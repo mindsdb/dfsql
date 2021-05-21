@@ -733,3 +733,17 @@ class TestDataSource:
         sql = "SELECT passenger_id FROM titanic WHERE did_survive(survived)"
         query_result = data_source.query(sql)
         assert (query_result.values == df[df.survived == 1]['passenger_id'].values).all()
+
+    def test_is_null(self, data_source_googleplay, googleplay_csv):
+        df = pd.read_csv(googleplay_csv)
+
+        out_df = df[(df.Rating.isnull())][['App']]
+        sql = "SELECT app, rating FROM googleplaystore WHERE rating IS NULL"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+
+        out_df = df[~(df.Rating.isnull())][['App']]
+        sql = "SELECT app, rating FROM googleplaystore WHERE rating IS NOT NULL"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+
