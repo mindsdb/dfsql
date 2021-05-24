@@ -7,8 +7,9 @@ from dfsql.exceptions import QueryExecutionException
 from dfsql.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
 from dfsql.commands import try_parse_command
 from mindsdb_sql import parse_sql
-from mindsdb_sql.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast, Tuple)
-from dfsql.table import Table, FileTable
+from mindsdb_sql.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast, Tuple,
+                             NullConstant)
+from dfsql.table import Table, FileTable, preprocess_column_name
 
 
 def get_modin_operation(sql_op):
@@ -147,20 +148,20 @@ class DataSource:
         if command:
             return self.execute_command(command)
         query = parse_sql(sql)
-        return self.execute_query(query)
+        return self.execute_query(query, reduce_output=True)
 
     def execute_table_identifier(self, query):
         table_name = query.value
         if table_name not in self:
-            raise(QueryExecutionException(f'Unknown table {table_name}'))
+            raise QueryExecutionException(f'Unknown table {table_name}')
         else:
             df = self.tables[table_name].dataframe
-            scope = self.query_scope
-            scope[table_name] = df
-            scope[query.alias] = df
+            self.query_scope[table_name] = df
             return df
 
     def execute_constant(self, query):
+        if isinstance(query, NullConstant):
+            return None
         value = query.value
         return value
 
@@ -173,20 +174,32 @@ class DataSource:
         return result
 
     def execute_column_identifier(self, query, df):
-        scope = self.query_scope
+        name_components = query.value.split('.')
 
-        full_column_name = query.value
-        if full_column_name in df.columns:
-            return df[full_column_name]
+        if len(name_components) == 1:
+            full_column_name = preprocess_column_name(query.value)
+            if full_column_name in df.columns:
+                return df[full_column_name]
+        elif len(name_components) == 2:
+            table_name, column_name = name_components
+            column_name = preprocess_column_name(column_name)
 
-        if len(full_column_name.split('.')) > 1:
-            table_name, column_name = full_column_name.split('.')
-            if table_name and not table_name in scope:
+            # If it's a join or a subquery
+            join_column_name = f'{table_name}.{column_name}'
+            if join_column_name in df:
+                return df[join_column_name]
+
+            if table_name and not table_name in self.query_scope:
                 raise QueryExecutionException(f"Table name {table_name} not in scope.")
+            table = self.query_scope[table_name]
 
-            if column_name in df.columns:
-                return df[column_name]
-        raise QueryExecutionException(f"Column {full_column_name} not found.")
+            if column_name in table.columns:
+                column = table[column_name]
+                column.name = query.value
+                return column
+        else:
+            raise QueryExecutionException(f"Too many name components: {query.value}")
+        raise QueryExecutionException(f"Column {query.value} not found.")
 
     def execute_type_cast(self, query, df):
         type_name = query.type_name
@@ -201,7 +214,7 @@ class DataSource:
         elif isinstance(query, TypeCast):
             return self.execute_type_cast(query, df)
 
-        return self.execute_query(query)
+        return self.execute_query(query, reduce_output=True)
 
     def resolve_select_target_col_name(self, target):
         col_name = target.alias
@@ -314,7 +327,7 @@ class DataSource:
         df = df.sort_values(by=fields, ascending=sort_orders)
         return df
 
-    def execute_select(self, query):
+    def execute_select(self, query, reduce_output=False):
         from_table = []
         if query.from_table:
             from_table = self.execute_from_query(query.from_table)
@@ -370,10 +383,13 @@ class DataSource:
             out_df = out_df.iloc[:limit, :]
 
         self.clear_query_scope()
-        if out_df.shape == (1, 1): # Just one value returned
-            return out_df.values[0][0]
-        elif out_df.shape[1] == 1:
-            return out_df[out_df.columns[0]]
+
+        # Turn tables into Series or constants if needed, for final returning
+        if reduce_output:
+            if out_df.shape == (1, 1): # Just one value returned
+                return out_df.values[0][0]
+            elif out_df.shape[1] == 1:
+                return out_df[out_df.columns[0]]
         return out_df
 
     def execute_join(self, query):
@@ -424,10 +440,16 @@ class DataSource:
 
     def execute_from_query(self, query):
         if isinstance(query, Identifier):
-            return self.execute_table_identifier(query)
-        if isinstance(query, Join):
-            return self.execute_join(query)
-        return self.execute_query(query)
+            df = self.execute_table_identifier(query)
+        elif isinstance(query, Join):
+            df = self.execute_join(query)
+        else:
+            df = self.execute_query(query)
+
+        if query.alias:
+            self.query_scope[query.alias] = df
+
+        return df
 
     def execute_groupby_queries(self, queries, df):
         col_names = []
@@ -443,12 +465,12 @@ class DataSource:
                 raise QueryExecutionException(f"Don't know how to aggregate by {str(query)}")
         return df.groupby(col_names)
 
-    def execute_query(self, query):
+    def execute_query(self, query, reduce_output=False):
         if isinstance(query, Select):
-            return self.execute_select(query)
+            return self.execute_select(query, reduce_output=reduce_output)
         elif isinstance(query, Constant):
             return self.execute_constant(query)
         elif isinstance(query, Tuple):
             return pd.Series([self.execute_query(item) for item in query.items])
         else:
-            raise (QueryExecutionException(f'No idea how to execute query statement {type(query)}'))
+            raise QueryExecutionException(f'No idea how to execute query statement {type(query)}')

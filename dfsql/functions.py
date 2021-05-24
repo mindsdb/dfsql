@@ -72,6 +72,36 @@ class Not(BaseFunction, BoolOutputMixin):
         return not args[0]
 
 
+class Is(BaseFunction, TwoArgsMixin, BoolOutputMixin):
+    name = 'is'
+
+    def get_output(self, args):
+        if is_modin(args[0]) or is_modin(args[1]):
+            if args[0] is None or args[1] is None:
+                # IS NULL
+                target = args[0]
+                if args[0] is None:
+                    target = args[1]
+
+                return pd.isnull(target)
+            elif args[0] is True or args[0] is False or args[1] is True or args[1] is False and is_modin(args[0]):
+                # IS [TRUE|FALSE]
+                return args[0] == args[1]
+
+        return args[0] is args[1]
+
+
+class IsNot(Is):
+    name = 'is not'
+
+    def get_output(self, args):
+        out = super().get_output(args)
+        if is_modin(out):
+            return ~out
+        else:
+            return not out
+
+
 class Equals(BaseFunction, TwoArgsMixin, BoolOutputMixin):
     name = '='
 
@@ -127,36 +157,36 @@ class In(BaseFunction, BoolOutputMixin):
         return args[0] in args[1]
 
 
-class IsNull(BaseFunction, OneArgMixin, BoolOutputMixin):
-    name = 'is null'
-
-    def get_output(self, args):
-        return pd.isnull(args[0])
-
-
-class IsNotNull(BaseFunction, OneArgMixin, BoolOutputMixin):
-    name = 'is not null'
-
-    def get_output(self, args):
-        return ~pd.isnull(args[0])
-
-
-class IsTrue(BaseFunction, OneArgMixin, BoolOutputMixin):
-    name = 'is true'
-
-    def get_output(self, args):
-        if is_modin(args[0]):
-            return args[0] == True
-        return args[0] is True
-
-
-class IsFalse(BaseFunction, OneArgMixin, BoolOutputMixin):
-    name = 'is false'
-
-    def get_output(self, args):
-        if is_modin(args[0]):
-            return args[0] == False
-        return args[0] is False
+# class IsNull(BaseFunction, OneArgMixin, BoolOutputMixin):
+#     name = 'is null'
+#
+#     def get_output(self, args):
+#         return pd.isnull(args[0])
+#
+#
+# class IsNotNull(BaseFunction, OneArgMixin, BoolOutputMixin):
+#     name = 'is not null'
+#
+#     def get_output(self, args):
+#         return ~pd.isnull(args[0])
+#
+#
+# class IsTrue(BaseFunction, OneArgMixin, BoolOutputMixin):
+#     name = 'is true'
+#
+#     def get_output(self, args):
+#         if is_modin(args[0]):
+#             return args[0] == True
+#         return args[0] is True
+#
+#
+# class IsFalse(BaseFunction, OneArgMixin, BoolOutputMixin):
+#     name = 'is false'
+#
+#     def get_output(self, args):
+#         if is_modin(args[0]):
+#             return args[0] == False
+#         return args[0] is False
 
 # Arithmetic functions
 
@@ -297,7 +327,7 @@ class CountDistinct(AggregateFunction):
 OPERATIONS = (
     And, Or, Not,
 
-    Equals, NotEquals, Greater, GreaterEqual, Less, LessEqual,
+    Equals, NotEquals, Greater, GreaterEqual, Less, LessEqual, Is, IsNot,
 
     Plus, Minus, Multiply, Divide, Modulo, Power,
 
@@ -305,7 +335,7 @@ OPERATIONS = (
 
     In,
 
-    IsNull, IsNotNull, IsTrue, IsFalse
+    # IsNull, IsNotNull, IsTrue, IsFalse
 )
 
 OPERATION_MAPPING = {
