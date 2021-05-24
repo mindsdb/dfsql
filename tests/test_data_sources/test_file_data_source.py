@@ -737,13 +737,38 @@ class TestDataSource:
     def test_is_null(self, data_source_googleplay, googleplay_csv):
         df = pd.read_csv(googleplay_csv)
 
-        out_df = df[(df.Rating.isnull())][['App']]
-        sql = "SELECT app, rating FROM googleplaystore WHERE rating IS NULL"
+        out_df = df[df.Rating.isnull()]['App']
+        sql = "SELECT App FROM googleplaystore WHERE rating IS NULL"
         query_result = data_source_googleplay.query(sql)
-        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+        assert (out_df.dropna().values == query_result.dropna().values).all()
 
-        out_df = df[~(df.Rating.isnull())][['App']]
-        sql = "SELECT app, rating FROM googleplaystore WHERE rating IS NOT NULL"
+        out_df = df[~df.Rating.isnull()]['App']
+        sql = "SELECT App FROM googleplaystore WHERE rating IS NOT NULL"
         query_result = data_source_googleplay.query(sql)
-        assert (out_df.dropna().values == query_result.dropna().values).all().all()
+        assert (out_df.dropna().values == query_result.dropna().values).all()
 
+    def test_is_true(self, data_source_googleplay, googleplay_csv):
+        df = pd.read_csv(googleplay_csv)
+
+        out_df = df[df.Price == '0']['App']
+        sql = "SELECT App FROM googleplaystore WHERE (price = '0') IS TRUE"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all()
+
+        out_df = df[df.Price != '0']['App']
+        sql = "SELECT App FROM googleplaystore WHERE (price = '0') IS NOT TRUE"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all()
+
+    def test_is_false(self, data_source_googleplay, googleplay_csv):
+        df = pd.read_csv(googleplay_csv)
+
+        out_df = df[df.Price != '0']['App']
+        sql = "SELECT App FROM googleplaystore WHERE (price = '0') IS FALSE"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all()
+
+        out_df = df[df.Price == '0']['App']
+        sql = "SELECT App FROM googleplaystore WHERE (price = '0') IS NOT FALSE"
+        query_result = data_source_googleplay.query(sql)
+        assert (out_df.dropna().values == query_result.dropna().values).all()

@@ -7,7 +7,8 @@ from dfsql.exceptions import QueryExecutionException
 from dfsql.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
 from dfsql.commands import try_parse_command
 from mindsdb_sql import parse_sql
-from mindsdb_sql.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast, Tuple)
+from mindsdb_sql.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast, Tuple,
+                             NullConstant)
 from dfsql.table import Table, FileTable, preprocess_column_name
 
 
@@ -161,6 +162,8 @@ class DataSource:
             return df
 
     def execute_constant(self, query):
+        if isinstance(query, NullConstant):
+            return None
         value = query.value
         return value
 
