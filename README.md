@@ -18,7 +18,7 @@
 1    dog     100
 2    cat      25
 3    dog      71
->>> sql_query("SELECT animal, height FROM animals_df WHERE height > 50", from_tables={"animals_df": df})
+>>> sql_query("SELECT animal, height FROM animals_df WHERE height > 50", animals_df=df)
   animal  height
 0    dog     100
 1    dog      71
