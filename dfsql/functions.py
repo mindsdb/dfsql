@@ -351,6 +351,7 @@ AGGREGATE_MAPPING = {
     op.name: op for op in AGGREGATE_FUNCTIONS
 }
 
+
 def is_supported(op_name):
     return op_name.lower() in OPERATION_MAPPING or op_name.lower() in AGGREGATE_MAPPING
 
