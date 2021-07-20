@@ -22,6 +22,6 @@ jobs:
         pip install -r requirements.txt
         pip install --no-cache-dir -e .[test]
     - name: Run unit tests
-      run: pytest --capture=tee-sys
+      run: pytest --capture=tee-sys --rP
       shell: bash
 
