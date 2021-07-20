@@ -20,7 +20,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=requirements,
     extras_require=dict(
-        test=['pytest>=5.4.3', 'requests >= 2.22.0', 'modin[all]>=0.10.1'],
+        test=['pytest>=5.4.3', 'requests >= 2.22.0', 'modin[all]>=0.10.1', 'pytest-timeout>=1.4.2'],
         modin=['modin[all]>=0.10.1']),
     classifiers=[
         "Programming Language :: Python :: 3.7",
