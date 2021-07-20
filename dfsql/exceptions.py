@@ -1,15 +1,15 @@
-class dfsqlException(Exception):
+class DfsqlException(Exception):
     pass
 
 
-class SQLParsingException(dfsqlException):
+class SQLParsingException(DfsqlException):
     pass
 
 
-class CommandException(dfsqlException):
+class CommandException(DfsqlException):
     pass
 
 
-class QueryExecutionException(dfsqlException):
+class QueryExecutionException(DfsqlException):
     pass
 

@@ -1,14 +1,14 @@
 import modin.pandas as mpd
 import pandas as pd
 import pytest
-from dfsql.exceptions import QueryExecutionException, dfsqlException
+from dfsql.exceptions import QueryExecutionException, DfsqlException
 
 
 @pytest.mark.parametrize(
     "engine",
     [
         pytest.param(pd, id="pandas"),
-        # pytest.param(mpd, id="modin"),
+        pytest.param(mpd, id="modin"),
     ],
 )
 class TestExtensions:
