@@ -1,3 +1,4 @@
+import logging
 import re
 from dfsql import sql_query
 from dfsql.engine import pd as pd_engine
@@ -90,4 +91,4 @@ try:
 
     register_modin_dataframe_accessor("sql")(SQLAccessor)
 except ImportError:
-    pass
+    warnings.warn('Modin not found, dfsql Modin dataframe extensions not loaded', UserWarning)

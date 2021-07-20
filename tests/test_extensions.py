@@ -7,7 +7,7 @@ from dfsql.exceptions import QueryExecutionException, dfsqlException
 @pytest.mark.parametrize(
     "engine",
     [
-        pytest.param(pd, id="pandas"),
+        # pytest.param(pd, id="pandas"),
         pytest.param(mpd, id="modin"),
     ],
 )
