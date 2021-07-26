@@ -35,4 +35,8 @@ jobs:
     - name: Run unit tests
       run: pytest --capture=tee-sys --timeout=600
       shell: bash
-
+    - name: Upload ray logs
+      uses: actions/upload-artifact@v2
+      with:
+        name: ray-logs
+        path: /tmp/ray/session_latest/logs
