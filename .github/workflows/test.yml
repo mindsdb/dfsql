@@ -36,6 +36,7 @@ jobs:
       run: pytest --capture=tee-sys --timeout=600
       shell: bash
     - name: Upload ray logs
+      if: always()
       uses: actions/upload-artifact@v2
       with:
         name: ray-logs
