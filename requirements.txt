@@ -1,5 +1,5 @@
 pandas >= 1.1.2
 numpy >= 1.18.5
 confi >= 0.0.4.1
-mindsdb_sql == 0.0.13
+mindsdb_sql == 0.0.16
 
