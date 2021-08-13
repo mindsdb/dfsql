@@ -2,6 +2,7 @@ import tempfile
 import os
 import shutil
 import time
+from dfsql.__about__ import __version__
 from dfsql.config import Configuration
 from dfsql.exceptions import DfsqlException
 from dfsql.data_sources import DataSource
