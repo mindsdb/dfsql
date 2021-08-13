@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from dfsql.exceptions import QueryExecutionException, dfsqlException
+from dfsql.exceptions import QueryExecutionException, DfsqlException
 
 
 class TestQuickInterface:
@@ -65,7 +65,7 @@ class TestQuickInterface:
 
         sql = "SELECT passenger_id FROM whatever_table"
 
-        with pytest.raises(dfsqlException):
+        with pytest.raises(DfsqlException):
             sql_query(sql, wrong_table=df)
 
         # Run again to make sure it works after a failure
@@ -79,13 +79,13 @@ class TestQuickInterface:
         from dfsql.extensions import sql_query
         sql = "SELECT passenger_id FROM whatever_table"
 
-        with pytest.raises(dfsqlException):
+        with pytest.raises(DfsqlException):
             sql_query(sql, None)
 
-        with pytest.raises(dfsqlException):
+        with pytest.raises(DfsqlException):
             sql_query(sql, something={})
 
-        with pytest.raises(dfsqlException):
+        with pytest.raises(DfsqlException):
             sql_query(sql, something=[])
 
     def test_error_extra_tables(self, csv_file):
@@ -93,7 +93,7 @@ class TestQuickInterface:
         df = pd.read_csv(csv_file)
         sql = "SELECT passenger_id FROM whatever_table"
 
-        with pytest.raises(dfsqlException):
+        with pytest.raises(DfsqlException):
             sql_query(sql, whatever_table=df, extra_table=df)
 
     def test_custom_functions(self, csv_file):

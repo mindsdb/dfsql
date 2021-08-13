@@ -20,10 +20,9 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=requirements,
     extras_require=dict(
-        test=['pytest>=5.4.3', 'requests >= 2.22.0', 'modin[all]>=0.8.0'],
-        modin=['modin[all]>=0.8.0']),
+        test=['pytest>=5.4.3', 'requests >= 2.22.0', 'modin[all]>=0.10.1', 'pytest-timeout>=1.4.2'],
+        modin=['modin[all]>=0.10.1']),
     classifiers=[
-        "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

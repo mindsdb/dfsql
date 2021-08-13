@@ -7,8 +7,8 @@ from dfsql.exceptions import QueryExecutionException
 from dfsql.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
 from dfsql.commands import try_parse_command
 from mindsdb_sql import parse_sql
-from mindsdb_sql.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast, Tuple,
-                             NullConstant)
+from mindsdb_sql.parser.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast,
+                                    Tuple, NullConstant, Star)
 from dfsql.table import Table, FileTable, preprocess_column_name
 
 
@@ -35,6 +35,9 @@ def cast_type(obj, type_name):
 class DataSource:
     def __init__(self, metadata_dir, tables=None, cache=None, custom_functions=None):
         self.metadata_dir = metadata_dir
+
+        if not os.path.exists(self.metadata_dir):
+            os.makedirs(self.metadata_dir, exist_ok=True)
 
         tables = {t.name.lower(): t for t in tables} if tables else {}
         self.tables = None
@@ -151,7 +154,7 @@ class DataSource:
         return self.execute_query(query, reduce_output=True)
 
     def execute_table_identifier(self, query):
-        table_name = query.value
+        table_name = query.parts_to_str()
         if table_name not in self:
             raise QueryExecutionException(f'Unknown table {table_name}')
         else:
@@ -174,10 +177,10 @@ class DataSource:
         return result
 
     def execute_column_identifier(self, query, df):
-        name_components = query.value.split('.')
+        name_components = query.parts
 
         if len(name_components) == 1:
-            full_column_name = preprocess_column_name(query.value)
+            full_column_name = preprocess_column_name(name_components[0])
             if full_column_name in df.columns:
                 return df[full_column_name]
         elif len(name_components) == 2:
@@ -195,11 +198,11 @@ class DataSource:
 
             if column_name in table.columns:
                 column = table[column_name]
-                column.name = query.value
+                column.name = query.parts_to_str()
                 return column
         else:
-            raise QueryExecutionException(f"Too many name components: {query.value}")
-        raise QueryExecutionException(f"Column {query.value} not found.")
+            raise QueryExecutionException(f"Too many name components: {query.parts}")
+        raise QueryExecutionException(f"Column {query.parts_to_str()} not found.")
 
     def execute_type_cast(self, query, df):
         type_name = query.type_name
@@ -220,7 +223,7 @@ class DataSource:
         col_name = target.alias
         if not col_name:
             if isinstance(target, Identifier):
-                col_name = target.value
+                col_name = target.parts_to_str()
             else:
                 col_name = str(target)
         return col_name
@@ -235,7 +238,7 @@ class DataSource:
         scalar_values = []
         # Expand star
         for i, target in enumerate(targets):
-            if isinstance(target, Identifier) and target.value == '*':
+            if isinstance(target, Star):
                 targets = targets[:i] + [Identifier(colname) for colname in
                                                      source_df.columns] + targets[i + 1:]
                 break
@@ -272,7 +275,7 @@ class DataSource:
 
         agg = {}
 
-        group_by_cols = [q.value for q in group_by if q.value is not True]
+        group_by_cols = [q.parts_to_str() for q in group_by if q != Constant(True)]
         for target in targets:
             col_df_name = target.alias
             col_name = self.resolve_select_target_col_name(target)
@@ -281,12 +284,13 @@ class DataSource:
                 raise QueryExecutionException(f'Duplicate column name {col_name}. Provide an alias to resolve ambiguity.')
 
             if isinstance(target, Identifier):
-                col_df_name = target.value
+                col_df_name = target.parts_to_str()
 
             if isinstance(target, Function):
                 arg = target.args[0]
-                assert isinstance(arg, Identifier)
-                arg = arg.value
+                if not isinstance(arg, Identifier):
+                    raise QueryExecutionException(f'The argument of an aggregate function must be a column, found: {str(arg)}')
+                arg = arg.parts_to_str()
 
                 func_name = target.op.lower()
                 if target.distinct:
@@ -322,7 +326,7 @@ class DataSource:
         return out_df
 
     def execute_order_by(self, order_by, df):
-        fields = [s.field.value for s in order_by]
+        fields = [s.field.parts_to_str() for s in order_by]
         sort_orders = [s.direction != 'DESC' for s in order_by]
         df = df.sort_values(by=fields, ascending=sort_orders)
         return df
@@ -414,13 +418,13 @@ class DataSource:
             right_on = condition.args[1]
         else:
             raise QueryExecutionException(f'Invalid join condition {condition.op}')
-        left_name = query.left.alias if query.left.alias else query.left.value
-        right_name = query.right.alias if query.right.alias else query.right.value
-        left_on, right_on = left_on if left_on.value.split('.')[0] in left_name else right_on, \
-                            right_on if right_on.value.split('.')[0] in right_name else left_on
+        left_name = query.left.alias if query.left.alias else query.left.parts_to_str()
+        right_name = query.right.alias if query.right.alias else query.right.parts_to_str()
+        left_on, right_on = left_on if left_on.parts[0] in left_name else right_on, \
+                            right_on if right_on.parts[0] in right_name else left_on
 
-        left_on = left_on.value.split('.')[-1]
-        right_on = right_on.value.split('.')[-1]
+        left_on = left_on.parts[-1]
+        right_on = right_on.parts[-1]
         out_df = pd.merge(left, right, how=join_type, left_on=[left_on], right_on=[right_on], suffixes=('_x', '_y'))
         renaming = {f'{left_on}_x': left_on, f'{right_on}_y': right_on}
 
@@ -454,7 +458,7 @@ class DataSource:
     def execute_groupby_queries(self, queries, df):
         col_names = []
 
-        if len(queries) == 1 and isinstance(queries[0], Constant) and queries[0].value == True:
+        if len(queries) == 1 and queries[0] == Constant(True):
             return df
 
         for query in queries:

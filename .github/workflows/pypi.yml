@@ -44,9 +44,16 @@ jobs:
       run: |
         SETUP_PLAT_NAME=linux python3 setup.py sdist bdist_wheel --plat-name manylinux1_x86_64
         SETUP_PLAT_NAME=linux python3 setup.py sdist bdist_wheel --plat-name manylinux1_i686
-    - name: Publish to PyPI
+    - name: Publish manylinux to PyPI
       env:
         TWINE_USERNAME:  __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
       run: |
         twine upload dist/*manylinux*.whl
+    - name: Build and upload regular wheels
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      run: |
+        python setup.py sdist
+        twine upload dist/*

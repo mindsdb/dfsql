@@ -1,7 +1,7 @@
 import modin.pandas as mpd
 import pandas as pd
 import pytest
-from dfsql.exceptions import QueryExecutionException, dfsqlException
+from dfsql.exceptions import QueryExecutionException, DfsqlException
 
 
 @pytest.mark.parametrize(
@@ -13,6 +13,7 @@ from dfsql.exceptions import QueryExecutionException, dfsqlException
 )
 class TestExtensions:
     def test_df_sql_simple_select(self, config, engine, csv_file):
+        print('Running with engine', engine)
         import dfsql.extensions
 
         df = engine.read_csv(csv_file)
