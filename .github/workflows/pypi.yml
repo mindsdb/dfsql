@@ -57,3 +57,14 @@ jobs:
       run: |
         python setup.py sdist
         twine upload dist/*
+  test_installation:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        python-version: [ 3.7, 3.8 ]
+    steps:
+      - name: Install dfsql
+        run: pip install dfsql
+      - name: Import dfsql
+        run: python -c "import dfsql;print(dfsql.__version__)"
