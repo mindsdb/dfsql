@@ -23,7 +23,7 @@ def sql_query(sql, *args, ds_kwargs=None, custom_functions=None, **kwargs):
             if table_name not in sql:
                 raise DfsqlException(f"Table {table_name} found in from_tables, but not in the SQL query.")
             tmp_fpath = os.path.join(tmpdir, f'{table_name}.csv')
-            dataframe.to_csv(tmp_fpath, index=False)
+            PandasDataFrame(dataframe.values, columns=dataframe.columns, index=dataframe.index).to_csv(tmp_fpath, index=False)
             ds.add_table_from_file(tmp_fpath)
 
         result = ds.query(sql)
