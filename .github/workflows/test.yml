@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.8] #[3.7,3.8]
+        python-version: [3.7,3.8]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -21,23 +21,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install --no-cache-dir -e .[test]
-
-    - name: Install latest Ray (Linux)
-      run: pip install -U https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-2.0.0.dev0-cp38-cp38-manylinux2014_x86_64.whl
-      if: matrix.os == 'ubuntu-latest'
-    - name: Install latest Ray (Windows)
-      run: pip install -U https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-2.0.0.dev0-cp38-cp38-win_amd64.whl
-      if: matrix.os == 'windows-latest'
-    - name: Install latest Ray (Mac)
-      run: pip install -U https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-2.0.0.dev0-cp38-cp38-macosx_10_13_x86_64.whl
-      if: matrix.os == 'macos-latest'
-
     - name: Run unit tests
       run: pytest --capture=tee-sys --timeout=600
       shell: bash
-    - name: Upload ray logs
-      if: always()
-      uses: actions/upload-artifact@v2
-      with:
-        name: ray-logs
-        path: /tmp/ray/session_latest/logs
