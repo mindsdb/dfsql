@@ -7,9 +7,13 @@ from dfsql.exceptions import QueryExecutionException
 from dfsql.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
 from dfsql.commands import try_parse_command
 from mindsdb_sql import parse_sql
-from mindsdb_sql.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast, Tuple,
+from mindsdb_sql.parser.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast, Tuple,
                              NullConstant)
 from dfsql.table import Table, FileTable, preprocess_column_name
+
+
+def _get_value(identifier):
+    return identifier.alias or '.'.join(identifier.parts)
 
 
 def get_modin_operation(sql_op):
@@ -148,10 +152,16 @@ class DataSource:
         if command:
             return self.execute_command(command)
         query = parse_sql(sql)
+        # +++ FIXME remove '`' from column aliases: select max(name) as `max(name)`
+        if isinstance(query.targets, list):
+            for target in query.targets:
+                if isinstance(target.alias, str):
+                    target.alias = target.alias.strip('`')
+        # ---
         return self.execute_query(query, reduce_output=True)
 
     def execute_table_identifier(self, query):
-        table_name = query.value
+        table_name = _get_value(query)
         if table_name not in self:
             raise QueryExecutionException(f'Unknown table {table_name}')
         else:
@@ -174,10 +184,11 @@ class DataSource:
         return result
 
     def execute_column_identifier(self, query, df):
-        name_components = query.value.split('.')
+        name_components = query.parts
+        qv = _get_value(query)
 
         if len(name_components) == 1:
-            full_column_name = preprocess_column_name(query.value)
+            full_column_name = preprocess_column_name(qv)
             if full_column_name in df.columns:
                 return df[full_column_name]
         elif len(name_components) == 2:
@@ -195,11 +206,11 @@ class DataSource:
 
             if column_name in table.columns:
                 column = table[column_name]
-                column.name = query.value
+                column.name = qv
                 return column
         else:
-            raise QueryExecutionException(f"Too many name components: {query.value}")
-        raise QueryExecutionException(f"Column {query.value} not found.")
+            raise QueryExecutionException(f"Too many name components: {qv}")
+        raise QueryExecutionException(f"Column {qv} not found.")
 
     def execute_type_cast(self, query, df):
         type_name = query.type_name
@@ -220,7 +231,7 @@ class DataSource:
         col_name = target.alias
         if not col_name:
             if isinstance(target, Identifier):
-                col_name = target.value
+                col_name = _get_value(target)
             else:
                 col_name = str(target)
         return col_name
@@ -235,7 +246,8 @@ class DataSource:
         scalar_values = []
         # Expand star
         for i, target in enumerate(targets):
-            if isinstance(target, Identifier) and target.value == '*':
+            tv = _get_value(target)
+            if isinstance(target, Identifier) and tv == '*':
                 targets = targets[:i] + [Identifier(colname) for colname in
                                                      source_df.columns] + targets[i + 1:]
                 break
@@ -272,7 +284,7 @@ class DataSource:
 
         agg = {}
 
-        group_by_cols = [q.value for q in group_by if q.value is not True]
+        group_by_cols = [_get_value(q) for q in group_by if _get_value(q) is not True]
         for target in targets:
             col_df_name = target.alias
             col_name = self.resolve_select_target_col_name(target)
@@ -281,12 +293,12 @@ class DataSource:
                 raise QueryExecutionException(f'Duplicate column name {col_name}. Provide an alias to resolve ambiguity.')
 
             if isinstance(target, Identifier):
-                col_df_name = target.value
+                col_df_name = _get_value(target)
 
             if isinstance(target, Function):
                 arg = target.args[0]
                 assert isinstance(arg, Identifier)
-                arg = arg.value
+                arg = _get_value(arg)
 
                 func_name = target.op.lower()
                 if target.distinct:
@@ -322,7 +334,7 @@ class DataSource:
         return out_df
 
     def execute_order_by(self, order_by, df):
-        fields = [s.field.value for s in order_by]
+        fields = [_get_value(s.field) for s in order_by]
         sort_orders = [s.direction != 'DESC' for s in order_by]
         df = df.sort_values(by=fields, ascending=sort_orders)
         return df
