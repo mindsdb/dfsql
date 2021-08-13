@@ -17,8 +17,8 @@ def sql_query(sql, *args, ds_kwargs=None, custom_functions=None, **kwargs):
     ds = None
     tmpdir = None
     try:
-        tmpdir = os.path.join(tempfile.gettempdir(), 'dfsql_temp_' + str(round(time.time())))
-        ds = DataSource(*args, metadata_dir=str(tmpdir), custom_functions=custom_functions, **ds_args)
+        tmpdir = os.path.join('.dfsql_temp_', 'query_' + str(round(time.time())))
+        ds = DataSource(*args, metadata_dir=tmpdir, custom_functions=custom_functions, **ds_args)
         for table_name, dataframe in from_tables.items():
             if table_name not in sql:
                 raise DfsqlException(f"Table {table_name} found in from_tables, but not in the SQL query.")

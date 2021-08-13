@@ -36,6 +36,9 @@ class DataSource:
     def __init__(self, metadata_dir, tables=None, cache=None, custom_functions=None):
         self.metadata_dir = metadata_dir
 
+        if not os.path.exists(self.metadata_dir):
+            os.makedirs(self.metadata_dir, exist_ok=True)
+
         tables = {t.name.lower(): t for t in tables} if tables else {}
         self.tables = None
 
