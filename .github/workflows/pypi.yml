@@ -58,6 +58,7 @@ jobs:
         python setup.py sdist
         twine upload dist/*
   test_installation:
+    needs: deploy_pypi
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
