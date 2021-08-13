@@ -323,6 +323,15 @@ class CountDistinct(AggregateFunction):
     string_repr = 'nunique'
 
 
+class Max(AggregateFunction):
+    name = 'max'
+    string_repr = 'max'
+
+
+class Min(AggregateFunction):
+    name = 'min'
+    string_repr = 'min'
+
 
 OPERATIONS = (
     And, Or, Not,
@@ -344,7 +353,7 @@ OPERATION_MAPPING = {
 OPERATION_MAPPING['<>'] = NotEquals
 
 AGGREGATE_FUNCTIONS = (
-    Sum, Mean, Count, CountDistinct,
+    Sum, Mean, Count, CountDistinct, Max, Min
 )
 
 AGGREGATE_MAPPING = {
