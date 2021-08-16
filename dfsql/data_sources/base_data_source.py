@@ -289,10 +289,11 @@ class DataSource:
         for target in targets:
             if isinstance(target, Identifier):
                 col_name = target.parts_to_str()
-                if target.alias:
-                    column_renames[col_name] = target.alias
             else:
-                col_name = target.alias if target.alias else str(target)
+                col_name = target.to_string(alias=False)
+
+            if target.alias:
+                column_renames[col_name] = target.alias
 
             target_column_names.append(col_name)
 
