@@ -339,6 +339,69 @@ class TestDataSource:
         values_right = query_result.values
         assert (values_left == values_right).all().all()
 
+    def test_group_by_alias(self, csv_file, data_source):
+        sql = "SELECT survived as col1, count(passenger_id) AS count_passenger_id FROM titanic GROUP BY survived"
+        query_result = data_source.query(sql)
+
+        df = pd.read_csv(csv_file)
+        df = df.groupby(['survived']).agg({'passenger_id': 'count'}).reset_index()
+        df.columns = ['col1', 'count_passenger_id']
+
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+        values_left = df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_groupby_function(self, data_source, csv_file):
+        df = pd.read_csv(csv_file)
+        df['lower(name)'] = df.name.str.lower()
+        df = df.groupby(['lower(name)']).agg({'passenger_id': 'count'}).reset_index()
+        df = df.rename(columns={'passenger_id': 'count'})
+
+        sql = "SELECT lower(name), COUNT(passenger_id) as count FROM titanic GROUP BY lower(name)"
+
+        query_result = data_source.query(sql)
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+
+        values_left = df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_groupby_function_with_alias(self, data_source, csv_file):
+        df = pd.read_csv(csv_file)
+        df['somealias'] = df.name.str.lower()
+        df = df.groupby(['somealias']).agg({'passenger_id': 'count'}).reset_index()
+        df = df.rename(columns={'passenger_id': 'count'})
+
+        sql = "SELECT lower(name) as somealias, COUNT(passenger_id) as count FROM titanic GROUP BY lower(name)"
+
+        query_result = data_source.query(sql)
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+
+        values_left = df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    # TODO
+    # def test_groupby_function_nested(self, data_source, csv_file):
+    #     df = pd.read_csv(csv_file)
+    #     df['somealias'] = df.name.str.lower()
+    #     df = df.groupby(['somealias']).agg({'passenger_id': 'count'}).reset_index()
+    #     df = df.rename(columns={'passenger_id': 'count'})
+    #
+    #     sql = "SELECT name as somealias, COUNT(passenger_id) as count FROM titanic GROUP BY upper(lower(name))"
+    #
+    #     query_result = data_source.query(sql)
+    #     assert (query_result.columns == df.columns).all()
+    #     assert query_result.shape == df.shape
+    #
+    #     values_left = df.values
+    #     values_right = query_result.values
+    #     assert (values_left == values_right).all().all()
+
     def test_groupby_custom_aggregate_func(self, csv_file, data_source):
         sql = "SELECT sex, mode(survived) AS mode_survived FROM titanic GROUP BY sex"
 
@@ -780,4 +843,5 @@ class TestDataSource:
         query_result = data_source_googleplay.query(sql)
         assert query_result.name == 'tab_alias.app'
         assert (out_df.dropna().values == query_result.dropna().values).all()
+
 

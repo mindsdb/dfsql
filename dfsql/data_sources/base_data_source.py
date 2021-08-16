@@ -269,28 +269,49 @@ class DataSource:
         return out_df
 
     def execute_select_groupby_targets(self, targets, source_df, group_by):
-        final_out_column_names = []
-        out_column_names = []
-        out_columns = []
+        target_column_names = [] # Original names of columns to be returned by group by
+        column_renames = {} # Aliases for columns to be returned
+        agg = {} # Agg dict for pandas aggregation
 
-        agg = {}
+        # Obtain columns that aggregation happens by
+        group_by_cols = [] # Columns that aggregation happens over. Only these can be among targets and not under an agg func
+        for g in group_by:
+            if isinstance(g, Identifier):
+                group_by_cols.append(g.parts_to_str())
+            elif isinstance(g, Operation):
+                group_by_cols.append(str(g))
+            elif g == Constant(True): # Special case of implicit aggregation
+                continue
+            else:
+                raise QueryExecutionException(f'Dont know how to handle group by column: {str(g)}')
 
-        group_by_cols = [q.parts_to_str() for q in group_by if q != Constant(True)]
+        # Obtain column names, column aliases and aggregations to perform
         for target in targets:
-            col_df_name = target.alias
-            col_name = self.resolve_select_target_col_name(target)
+            if isinstance(target, Identifier):
+                col_name = target.parts_to_str()
+            else:
+                col_name = target.to_string(alias=False)
+
+            if target.alias:
+                column_renames[col_name] = target.alias
+
+            target_column_names.append(col_name)
 
             if col_name in agg:
                 raise QueryExecutionException(f'Duplicate column name {col_name}. Provide an alias to resolve ambiguity.')
 
-            if isinstance(target, Identifier):
-                col_df_name = target.parts_to_str()
-
             if isinstance(target, Function):
+                if col_name in group_by_cols:
+                    # It's not a function to be executed, it's a transformed column from group by clause, leave it be
+                    continue
+
+                if len(target.args) > 1:
+                    raise QueryExecutionException(f'Only one argument functions supported for aggregations, found: {str(target)}')
+
                 arg = target.args[0]
                 if not isinstance(arg, Identifier):
                     raise QueryExecutionException(f'The argument of an aggregate function must be a column, found: {str(arg)}')
-                arg = arg.parts_to_str()
+                arg_col = arg.parts_to_str()
 
                 func_name = target.op.lower()
                 if target.distinct:
@@ -299,29 +320,33 @@ class DataSource:
                 if not modin_op:
                     modin_op = get_aggregation_operation(func_name)
 
-                agg[col_name] = (arg, modin_op)
-            else:
-                if col_name not in group_by_cols and col_df_name not in group_by_cols:
-                    raise QueryExecutionException(f'Column {col_df_name}({col_name}) not found in GROUP BY clause')
-
-            final_out_column_names.append(col_name)
+                agg[col_name] = (arg_col, modin_op)
+            elif col_name not in group_by_cols:
+                # Not a function to be executed and not found among groupbys, sus
+                raise QueryExecutionException(f'Column {col_name} not found in GROUP BY clause')
 
         if isinstance(source_df, pd.Series):
             source_df = pd.DataFrame(source_df)
 
         if isinstance(source_df, pd.DataFrame):
+            # If it's an implicit aggregation
             temp_df = pd.DataFrame(source_df)
             temp_df['__dummy__'] = 0
             source_df = temp_df.groupby('__dummy__')
+
+        # Perform aggregation
         aggregate_result = source_df.agg(**agg)
 
+        out_df_column_names = []
+        out_df_column_values = []
         for col_index in aggregate_result.reset_index().columns:
-            if col_index not in final_out_column_names:
+            if col_index not in target_column_names:
                 continue
-            out_column_names.append(col_index)
-            out_columns.append(aggregate_result.reset_index()[col_index].values)
+            column_name = column_renames.get(col_index, col_index)
+            out_df_column_names.append(column_name)
+            out_df_column_values.append(aggregate_result.reset_index()[col_index].values)
 
-        out_dict = {col: values for col, values in zip(out_column_names, out_columns)}
+        out_dict = {col: values for col, values in zip(out_df_column_names, out_df_column_values)}
         out_df = pd.DataFrame.from_dict(out_dict)
         return out_df
 
@@ -465,6 +490,11 @@ class DataSource:
             if isinstance(query, Identifier):
                 column = self.execute_column_identifier(query, df)
                 col_names.append(column.name)
+            elif isinstance(query, Operation):
+                expr_result = self.execute_operation(query, df)
+                temp_col_name = query.alias if hasattr(query, 'alias') and query.alias else str(query)
+                df[temp_col_name] = expr_result
+                col_names.append(temp_col_name)
             else:
                 raise QueryExecutionException(f"Don't know how to aggregate by {str(query)}")
         return df.groupby(col_names)
