@@ -275,7 +275,16 @@ class DataSource:
 
         agg = {}
 
-        group_by_cols = [q.parts_to_str() for q in group_by if q != Constant(True)]
+        group_by_cols = []
+        for g in group_by:
+            if isinstance(g, Identifier):
+                group_by_cols.append(g.parts_to_str())
+            elif isinstance(g, Operation):
+                group_by_cols.append(str(g))
+            elif g == Constant(True):
+                continue
+            else:
+                raise QueryExecutionException(f'Dont know how to handle group by column: {str(g)}')
         for target in targets:
             col_df_name = target.alias
             col_name = self.resolve_select_target_col_name(target)
@@ -286,7 +295,7 @@ class DataSource:
             if isinstance(target, Identifier):
                 col_df_name = target.parts_to_str()
 
-            if isinstance(target, Function):
+            if col_name not in group_by_cols and isinstance(target, Function):
                 arg = target.args[0]
                 if not isinstance(arg, Identifier):
                     raise QueryExecutionException(f'The argument of an aggregate function must be a column, found: {str(arg)}')
@@ -300,9 +309,8 @@ class DataSource:
                     modin_op = get_aggregation_operation(func_name)
 
                 agg[col_name] = (arg, modin_op)
-            else:
-                if col_name not in group_by_cols and col_df_name not in group_by_cols:
-                    raise QueryExecutionException(f'Column {col_df_name}({col_name}) not found in GROUP BY clause')
+            elif col_name not in group_by_cols and col_df_name not in group_by_cols:
+                raise QueryExecutionException(f'Column {col_df_name}({col_name}) not found in GROUP BY clause')
 
             final_out_column_names.append(col_name)
 
@@ -465,6 +473,11 @@ class DataSource:
             if isinstance(query, Identifier):
                 column = self.execute_column_identifier(query, df)
                 col_names.append(column.name)
+            elif isinstance(query, Operation):
+                expr_result = self.execute_operation(query, df)
+                temp_col_name = query.alias if hasattr(query, 'alias') and query.alias else str(query)
+                df[temp_col_name] = expr_result
+                col_names.append(temp_col_name)
             else:
                 raise QueryExecutionException(f"Don't know how to aggregate by {str(query)}")
         return df.groupby(col_names)
