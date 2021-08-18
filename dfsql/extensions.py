@@ -15,7 +15,11 @@ class SQLAccessor:
     def maybe_add_from_to_query(self, sql_query, table_name):
         """Inserts "FROM temp" into every SELECT clause in query that does not have a FROM clause."""
         sql_query = sql_query.lower()
-        sql_query = sql_query.replace("(", " ( ").replace(")", " ) ")
+        sql_query = sql_query.replace("(", " ( ").replace(")", " ) ").replace('\n', ' ')
+
+        _RE_COMBINE_WHITESPACE = re.compile(r"\s+")
+        sql_query = _RE_COMBINE_WHITESPACE.sub(" ", sql_query).strip()
+
         insert_positions = []
         for m in re.finditer('select', sql_query):
             select_pos = m.start()
@@ -63,6 +67,7 @@ class SQLAccessor:
         table_name = 'temp'
         sql = self.maybe_add_from_to_query(sql, table_name=table_name)
         kwargs.update({table_name: self._obj})
+        print(sql, args, kwargs)
         return sql_query(sql, *args, **kwargs)
 
 try:

@@ -82,3 +82,35 @@ class TestExtensions:
 
         assert query_result == expected_out
 
+    def test_caps_column_names_dataframe(self, config, engine, tmpdir):
+        from dfsql.extensions import sql_query
+
+        csv = """
+ROUTE,DATE,RIDES
+2,2021-02-27,3626
+2,2021-02-28,5012
+        """
+
+        p = tmpdir.join('caps_df.csv')
+        p.write_text(csv, encoding='utf-8')
+
+        df = pd.read_csv(p)
+        sql = """
+SELECT `DATE` AS __timestamp,
+       AVG(`RIDES`) AS `AVG(RIDES)`
+FROM tab
+GROUP BY `DATE`
+ORDER BY `AVG(RIDES)` DESC
+        """
+
+        expected_output = df.groupby(['DATE']).agg({'RIDES': 'mean'}).reset_index()
+        expected_output = expected_output.sort_values(by='RIDES', ascending=False)
+        expected_output.columns = ['__timestamp', '`AVG(RIDES)`']
+
+        query_result = sql_query(sql, tab=df)
+        assert query_result.shape == expected_output.shape
+        values_left = expected_output.dropna().values
+        values_right = query_result.dropna().values
+
+        assert (values_left == values_right).all()
+

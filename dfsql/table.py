@@ -4,21 +4,13 @@ import numpy as np
 import os
 
 
-def preprocess_column_name(text):
-    text = re.sub(' +', ' ', text)
-    text = "".join(c for c in text if c.isalnum() or c in (' ', '_', '-')).strip().replace('.', '_').replace(' ', '_').replace('-', '_').lower()
-    return text
-
-
 def make_preprocessing_dict(df):
-    rename = {col: preprocess_column_name(col) for col in df.columns}
     empty_rows = df.index[df.isnull().all(axis=1)].values.tolist()
     drop_columns = df.columns[df.isnull().all(axis=0)].values.tolist()
-    return dict(rename=rename, empty_rows=empty_rows, drop_columns=drop_columns)
+    return dict(empty_rows=empty_rows, drop_columns=drop_columns)
 
 
-def preprocess_dataframe(df, rename, empty_rows, drop_columns):
-    df.columns = [rename[col] for col in df.columns]
+def preprocess_dataframe(df, empty_rows, drop_columns):
     df = df.drop(drop_columns, axis=1)
     df = df.drop(empty_rows, axis=0)
     df.index = range(len(df))

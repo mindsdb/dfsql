@@ -9,7 +9,7 @@ from dfsql.commands import try_parse_command
 from mindsdb_sql import parse_sql
 from mindsdb_sql.parser.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast,
                                     Tuple, NullConstant, Star)
-from dfsql.table import Table, FileTable, preprocess_column_name
+from dfsql.table import Table, FileTable
 
 
 def get_modin_operation(sql_op):
@@ -180,12 +180,11 @@ class DataSource:
         name_components = query.parts
 
         if len(name_components) == 1:
-            full_column_name = preprocess_column_name(name_components[0])
+            full_column_name = name_components[0]
             if full_column_name in df.columns:
                 return df[full_column_name]
         elif len(name_components) == 2:
             table_name, column_name = name_components
-            column_name = preprocess_column_name(column_name)
 
             # If it's a join or a subquery
             join_column_name = f'{table_name}.{column_name}'
@@ -220,12 +219,10 @@ class DataSource:
         return self.execute_query(query, reduce_output=True)
 
     def resolve_select_target_col_name(self, target):
-        col_name = target.alias
-        if not col_name:
-            if isinstance(target, Identifier):
-                col_name = target.parts_to_str()
-            else:
-                col_name = str(target)
+        if not target.alias:
+            col_name = target.to_string(alias=False)
+        else:
+            col_name = target.alias.to_string(alias=False)
         return col_name
 
     def execute_select_targets(self, targets, source_df):
@@ -287,13 +284,10 @@ class DataSource:
 
         # Obtain column names, column aliases and aggregations to perform
         for target in targets:
-            if isinstance(target, Identifier):
-                col_name = target.parts_to_str()
-            else:
-                col_name = target.to_string(alias=False)
+            col_name = target.to_string(alias=False)
 
             if target.alias:
-                column_renames[col_name] = target.alias
+                column_renames[col_name] = target.alias.to_string(alias=False)
 
             target_column_names.append(col_name)
 
@@ -476,7 +470,7 @@ class DataSource:
             df = self.execute_query(query)
 
         if query.alias:
-            self.query_scope[query.alias] = df
+            self.query_scope[query.alias.to_string()] = df
 
         return df
 

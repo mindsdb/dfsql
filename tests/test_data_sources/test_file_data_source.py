@@ -68,7 +68,6 @@ class TestDataSource:
         df = df.append([None]) # Empty row
         df['empty_column'] = None # Empty column
         df = df[list(source_df.columns)+['empty_column']]
-        df = df.rename(columns={'ticket': 'Ticket Number '}) # Bad column name
         df.to_csv(csv_file, index=None)
 
         ds = DataSource(metadata_dir=csv_file.dirpath())
@@ -90,12 +89,10 @@ class TestDataSource:
         empty_columns = pd.isnull(new_df).all(axis=0)
         assert not empty_columns.any()
         assert len(new_df) == len(source_df) # Duplicate dropped
-        assert new_df.columns[8] == 'ticket_number'
 
         preprocessing_dict = ds.tables['titanic'].preprocessing_dict
         assert preprocessing_dict['empty_rows'] == [9]
         assert preprocessing_dict['drop_columns'] == ['empty_column']
-        assert preprocessing_dict['rename']['Ticket Number '] == 'ticket_number'
 
     def test_simple_select(self, data_source):
         sql = "SELECT 1 AS result"
@@ -843,5 +840,6 @@ class TestDataSource:
         query_result = data_source_googleplay.query(sql)
         assert query_result.name == 'tab_alias.app'
         assert (out_df.dropna().values == query_result.dropna().values).all()
+
 
 
