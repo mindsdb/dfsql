@@ -80,7 +80,7 @@ class TestDataSource:
         ds.drop_table('titanic')
         assert not ds.tables
 
-        # cleaning applied
+        # cleaning Applied
         ds.add_table_from_file(str(csv_file), clean=True)
         # Empty rows removed, empty columns removed, columns renamed
         new_df = ds.tables['titanic'].dataframe
@@ -650,7 +650,7 @@ class TestDataSource:
         df = pd.read_csv(googleplay_csv)
 
         out_df = df[(df.Category == "FAMILY") & (df.Price == '0')][['App', 'Category']]
-        sql = "SELECT app, category FROM googleplaystore WHERE category = \"FAMILY\" AND price = \"0\""
+        sql = "SELECT App, Category FROM googleplaystore WHERE Category = \"FAMILY\" AND Price = \"0\""
         query_result = data_source_googleplay.query(sql)
 
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
@@ -659,7 +659,7 @@ class TestDataSource:
         df = pd.read_csv(googleplay_csv)
 
         out_df = df[~(df.Category == "FAMILY")][['App', 'Category']]
-        sql = "SELECT app, category FROM googleplaystore WHERE NOT category = \"FAMILY\""
+        sql = "SELECT App, Category FROM googleplaystore WHERE NOT Category = \"FAMILY\""
         query_result = data_source_googleplay.query(sql)
 
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
@@ -668,34 +668,34 @@ class TestDataSource:
         df = pd.read_csv(googleplay_csv)
 
         out_df = df.sort_values(by='App')[['App', 'Category']]
-        sql = "SELECT app, category FROM googleplaystore ORDER BY app"
+        sql = "SELECT App, Category FROM googleplaystore ORDER BY App"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
 
         out_df = df.sort_values(by='App', ascending=False)[['App', 'Category']]
-        sql = "SELECT app, category FROM googleplaystore ORDER BY app DESC"
+        sql = "SELECT App, Category FROM googleplaystore ORDER BY App DESC"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
 
         out_df = df.sort_values(by=['App', 'Category'])[['App', 'Category']]
-        sql = "SELECT app, category FROM googleplaystore ORDER BY app, category"
+        sql = "SELECT App, Category FROM googleplaystore ORDER BY App, Category"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
 
         out_df = df.sort_values(by=['App', 'Category'], ascending=[False, False])[['App', 'Category']]
-        sql = "SELECT app, category FROM googleplaystore ORDER BY app DESC, category DESC"
+        sql = "SELECT App, Category FROM googleplaystore ORDER BY App DESC, Category DESC"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
 
         out_df = df.sort_values(by=['App', 'Category'], ascending=[False, True])[['App', 'Category']]
-        sql = "SELECT app, category FROM googleplaystore ORDER BY app DESC, category ASC"
+        sql = "SELECT App, Category FROM googleplaystore ORDER BY App DESC, Category ASC"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
 
         out_df = df.groupby(['Category']).agg({'App': 'count'}).reset_index()
-        out_df.columns = ['category', 'count_app']
+        out_df.columns = ['Category', 'count_app']
         out_df = out_df.sort_values(by=['count_app'], ascending=[False])[:10]
-        sql = "SELECT category, count(app) AS count_app FROM googleplaystore GROUP BY category ORDER BY count_app DESC LIMIT 10"
+        sql = "SELECT Category, count(App) AS count_app FROM googleplaystore GROUP BY Category ORDER BY count_app DESC LIMIT 10"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all().all()
 
@@ -798,12 +798,12 @@ class TestDataSource:
         df = pd.read_csv(googleplay_csv)
 
         out_df = df[df.Rating.isnull()]['App']
-        sql = "SELECT App FROM googleplaystore WHERE rating IS NULL"
+        sql = "SELECT App FROM googleplaystore WHERE Rating IS NULL"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all()
 
         out_df = df[~df.Rating.isnull()]['App']
-        sql = "SELECT App FROM googleplaystore WHERE rating IS NOT NULL"
+        sql = "SELECT App FROM googleplaystore WHERE Rating IS NOT NULL"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all()
 
@@ -811,12 +811,12 @@ class TestDataSource:
         df = pd.read_csv(googleplay_csv)
 
         out_df = df[df.Price == '0']['App']
-        sql = "SELECT App FROM googleplaystore WHERE (price = '0') IS TRUE"
+        sql = "SELECT App FROM googleplaystore WHERE (Price = '0') IS TRUE"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all()
 
         out_df = df[df.Price != '0']['App']
-        sql = "SELECT App FROM googleplaystore WHERE (price = '0') IS NOT TRUE"
+        sql = "SELECT App FROM googleplaystore WHERE (Price = '0') IS NOT TRUE"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all()
 
@@ -824,19 +824,19 @@ class TestDataSource:
         df = pd.read_csv(googleplay_csv)
 
         out_df = df[df.Price != '0']['App']
-        sql = "SELECT App FROM googleplaystore WHERE (price = '0') IS FALSE"
+        sql = "SELECT App FROM googleplaystore WHERE (Price = '0') IS FALSE"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all()
 
         out_df = df[df.Price == '0']['App']
-        sql = "SELECT App FROM googleplaystore WHERE (price = '0') IS NOT FALSE"
+        sql = "SELECT App FROM googleplaystore WHERE (Price = '0') IS NOT FALSE"
         query_result = data_source_googleplay.query(sql)
         assert (out_df.dropna().values == query_result.dropna().values).all()
 
     def test_subquery_alias(self, googleplay_csv, data_source_googleplay):
         df = pd.read_csv(googleplay_csv)
         out_df = df.App
-        sql = "SELECT tab_alias.app FROM (SELECT app FROM googleplaystore) AS tab_alias"
+        sql = "SELECT tab_alias.app FROM (SELECT App as app FROM googleplaystore) AS tab_alias"
         query_result = data_source_googleplay.query(sql)
         assert query_result.name == 'tab_alias.app'
         assert (out_df.dropna().values == query_result.dropna().values).all()

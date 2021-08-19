@@ -437,8 +437,8 @@ class DataSource:
             right_on = condition.args[1]
         else:
             raise QueryExecutionException(f'Invalid join condition {condition.op}')
-        left_name = query.left.alias if query.left.alias else query.left.parts_to_str()
-        right_name = query.right.alias if query.right.alias else query.right.parts_to_str()
+        left_name = query.left.alias.to_string(alias=False) if query.left.alias else query.left.to_string(alias=False)
+        right_name = query.right.alias.to_string(alias=False) if query.right.alias else query.right.to_string(alias=False)
         left_on, right_on = left_on if left_on.parts[0] in left_name else right_on, \
                             right_on if right_on.parts[0] in right_name else left_on
 
