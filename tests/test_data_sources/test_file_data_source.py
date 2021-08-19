@@ -841,5 +841,10 @@ class TestDataSource:
         assert query_result.name == 'tab_alias.app'
         assert (out_df.dropna().values == query_result.dropna().values).all()
 
-
-
+    def test_multi_word_identifier(self, googleplay_csv, data_source_googleplay):
+        df = pd.read_csv(googleplay_csv)
+        out_df = df[['App', 'Content Rating']]
+        sql = "SELECT App, `Content Rating` FROM googleplaystore"
+        query_result = data_source_googleplay.query(sql)
+        assert (query_result.columns == out_df.columns).all()
+        assert (out_df.dropna().values == query_result.dropna().values).all()

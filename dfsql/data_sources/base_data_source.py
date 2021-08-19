@@ -407,6 +407,15 @@ class DataSource:
 
         self.clear_query_scope()
 
+        #Postprocess column names
+        new_cols = []
+        for col in out_df.columns:
+            if col.startswith('`') and col.endswith('`') and not '.' in col:
+                new_cols.append(col.strip('`'))
+            else:
+                new_cols.append(col)
+        out_df.columns = new_cols
+
         # Turn tables into Series or constants if needed, for final returning
         if reduce_output:
             if out_df.shape == (1, 1): # Just one value returned

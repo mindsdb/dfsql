@@ -14,7 +14,7 @@ class SQLAccessor:
 
     def maybe_add_from_to_query(self, sql_query, table_name):
         """Inserts "FROM temp" into every SELECT clause in query that does not have a FROM clause."""
-        sql_query = sql_query.replace("(", " ( ").replace(")", " ) ").replace('\n', ' ')
+        sql_query = sql_query.replace("(", " ( ").replace(")", " ) ").replace('\n', ' ').replace(',', ' , ')
 
         _RE_COMBINE_WHITESPACE = re.compile(r"\s+")
         sql_query = _RE_COMBINE_WHITESPACE.sub(" ", sql_query).strip()
@@ -23,8 +23,8 @@ class SQLAccessor:
         for m in re.finditer('select', sql_query.lower()):
             select_pos = m.start()
 
-            str_after_select = sql_query[select_pos:]
-            words_after_select = str_after_select.lower().split(' ')
+            str_after_select = sql_query[select_pos:].lower()
+            words_after_select = str_after_select.split(' ')
 
             keywords = ['where', 'group', 'having', 'order', 'limit', 'offset']
             need_to_insert_from = True
