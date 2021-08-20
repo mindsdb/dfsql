@@ -9,7 +9,7 @@ from dfsql.commands import try_parse_command
 from mindsdb_sql import parse_sql
 from mindsdb_sql.parser.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast,
                                     Tuple, NullConstant, Star)
-from dfsql.table import Table, FileTable, preprocess_column_name
+from dfsql.table import Table, FileTable
 
 
 def get_modin_operation(sql_op):
@@ -180,12 +180,11 @@ class DataSource:
         name_components = query.parts
 
         if len(name_components) == 1:
-            full_column_name = preprocess_column_name(name_components[0])
+            full_column_name = name_components[0]
             if full_column_name in df.columns:
                 return df[full_column_name]
         elif len(name_components) == 2:
             table_name, column_name = name_components
-            column_name = preprocess_column_name(column_name)
 
             # If it's a join or a subquery
             join_column_name = f'{table_name}.{column_name}'
@@ -220,12 +219,10 @@ class DataSource:
         return self.execute_query(query, reduce_output=True)
 
     def resolve_select_target_col_name(self, target):
-        col_name = target.alias
-        if not col_name:
-            if isinstance(target, Identifier):
-                col_name = target.parts_to_str()
-            else:
-                col_name = str(target)
+        if not target.alias:
+            col_name = target.to_string(alias=False)
+        else:
+            col_name = target.alias.to_string(alias=False)
         return col_name
 
     def execute_select_targets(self, targets, source_df):
@@ -287,13 +284,10 @@ class DataSource:
 
         # Obtain column names, column aliases and aggregations to perform
         for target in targets:
-            if isinstance(target, Identifier):
-                col_name = target.parts_to_str()
-            else:
-                col_name = target.to_string(alias=False)
+            col_name = target.to_string(alias=False)
 
             if target.alias:
-                column_renames[col_name] = target.alias
+                column_renames[col_name] = target.alias.to_string(alias=False)
 
             target_column_names.append(col_name)
 
@@ -413,6 +407,15 @@ class DataSource:
 
         self.clear_query_scope()
 
+        #Postprocess column names
+        new_cols = []
+        for col in out_df.columns:
+            if col.startswith('`') and col.endswith('`') and not '.' in col:
+                new_cols.append(col.strip('`'))
+            else:
+                new_cols.append(col)
+        out_df.columns = new_cols
+
         # Turn tables into Series or constants if needed, for final returning
         if reduce_output:
             if out_df.shape == (1, 1): # Just one value returned
@@ -443,8 +446,8 @@ class DataSource:
             right_on = condition.args[1]
         else:
             raise QueryExecutionException(f'Invalid join condition {condition.op}')
-        left_name = query.left.alias if query.left.alias else query.left.parts_to_str()
-        right_name = query.right.alias if query.right.alias else query.right.parts_to_str()
+        left_name = query.left.alias.to_string(alias=False) if query.left.alias else query.left.to_string(alias=False)
+        right_name = query.right.alias.to_string(alias=False) if query.right.alias else query.right.to_string(alias=False)
         left_on, right_on = left_on if left_on.parts[0] in left_name else right_on, \
                             right_on if right_on.parts[0] in right_name else left_on
 
@@ -476,7 +479,7 @@ class DataSource:
             df = self.execute_query(query)
 
         if query.alias:
-            self.query_scope[query.alias] = df
+            self.query_scope[query.alias.to_string()] = df
 
         return df
 

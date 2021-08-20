@@ -82,3 +82,4 @@ class TestExtensions:
 
         assert query_result == expected_out
 
+
