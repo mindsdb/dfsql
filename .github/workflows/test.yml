@@ -22,5 +22,5 @@ jobs:
         pip install -r requirements.txt
         pip install --no-cache-dir -e .[test]
     - name: Run unit tests
-      run: pytest --capture=tee-sys --timeout=600
+      run: pytest --capture=tee-sys --timeout=600 --verbose
       shell: bash
