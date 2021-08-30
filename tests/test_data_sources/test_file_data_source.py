@@ -47,7 +47,6 @@ class TestDataSource:
         assert json_data.get('titanic') and list(json_data.keys()) == ['titanic']
         assert json_data['titanic']['type'] == 'FileTable'
         assert json_data['titanic']['name'] == 'titanic'
-        assert json_data['titanic']['preprocessing_dict']
         assert json_data['titanic']['fpath'] == str(csv_file)
 
         with pytest.raises(QueryExecutionException):
@@ -62,38 +61,6 @@ class TestDataSource:
         ds3 = DataSource.create_new(metadata_dir=csv_file.dirpath())
         assert not ds3.tables
 
-    def test_file_preprocessing(self, csv_file):
-        source_df = pd.read_csv(str(csv_file))
-        df = source_df.copy()
-        df = df.append([None]) # Empty row
-        df['empty_column'] = None # Empty column
-        df = df[list(source_df.columns)+['empty_column']]
-        df.to_csv(csv_file, index=None)
-
-        ds = DataSource(metadata_dir=csv_file.dirpath())
-        assert not ds.tables and len(ds.tables) == 0
-
-        # No preprocessing changes nothing
-        ds.add_table_from_file(str(csv_file), clean=False)
-        assert ds.tables['titanic'].dataframe.shape == df.shape
-        assert (ds.tables['titanic'].dataframe.dropna().values == df.dropna().values).all().all()
-        ds.drop_table('titanic')
-        assert not ds.tables
-
-        # cleaning Applied
-        ds.add_table_from_file(str(csv_file), clean=True)
-        # Empty rows removed, empty columns removed, columns renamed
-        new_df = ds.tables['titanic'].dataframe
-        empty_rows = pd.isnull(new_df).all(axis=1)
-        assert not empty_rows.any()
-        empty_columns = pd.isnull(new_df).all(axis=0)
-        assert not empty_columns.any()
-        assert len(new_df) == len(source_df) # Duplicate dropped
-
-        preprocessing_dict = ds.tables['titanic'].preprocessing_dict
-        assert preprocessing_dict['empty_rows'] == [9]
-        assert preprocessing_dict['drop_columns'] == ['empty_column']
-
     def test_simple_select(self, data_source):
         sql = "SELECT 1 AS result"
         assert data_source.query(sql) == 1
@@ -104,7 +71,7 @@ class TestDataSource:
     def test_create_table(self, csv_file):
         ds = DataSource(metadata_dir=csv_file.dirpath())
         assert not ds.tables and len(ds.tables) == 0
-        sql = f"CREATE TABLE ('{str(csv_file)}', True)"
+        sql = f"CREATE TABLE ('{str(csv_file)}')"
         query_result = ds.query(sql)
         assert query_result == 'OK'
         assert ds.tables and len(ds.tables) == 1
@@ -115,7 +82,7 @@ class TestDataSource:
     def test_create_table_error_on_recreate(self, csv_file, data_source):
         assert data_source.tables['titanic']
 
-        sql = f"CREATE TABLE ('{str(csv_file)}', True)"
+        sql = f"CREATE TABLE ('{str(csv_file)}')"
         with pytest.raises(QueryExecutionException):
             query_result = data_source.query(sql)
 

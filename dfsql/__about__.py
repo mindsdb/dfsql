@@ -1,6 +1,6 @@
 __title__ = 'dfsql'
 __package_name__ = 'dfsql'
-__version__ = '0.5.4'
+__version__ = '0.6.4'
 __description__ = "SQL interface to Pandas"
 __email__ = "jorge@mindsdb.com"
 __author__ = 'MindsDB Inc'

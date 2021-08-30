@@ -31,9 +31,7 @@ class Command:
 
 class CreateTableCommand(Command):
     name = 'CREATE TABLE'
-    default_args = {
-        1: True, # clean_data
-    }
+    default_args = {}
 
     def validate_args(self, args):
         if len(args) > 2:
@@ -50,21 +48,18 @@ class CreateTableCommand(Command):
         if not text.startswith(cls.name):
             return None
 
-        pattern = r'^CREATE TABLE \((\S+)(?:, ((?:True)|(?:False)))?\);?$'
+        pattern = r'^CREATE TABLE \((\S+)?\);?$'
 
         matches = re.match(pattern, text)
         if not matches:
             return None
         args = [(arg.strip(' \'\"') if arg is not None else None) for arg in matches.groups()]
         args[0] = str(args[0])
-        if len(args) > 1 and args[1] is not None:
-            args[1] = bool(args[1])
         return cls(args)
 
     def execute(self, data_source):
         fpath = self.args[0]
-        clean = self.args[1]
-        data_source.add_table_from_file(fpath, clean=clean)
+        data_source.add_table_from_file(fpath)
         return 'OK'
 
 

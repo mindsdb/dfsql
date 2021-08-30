@@ -80,8 +80,8 @@ class DataSource:
         if os.path.exists(os.path.join(metadata_dir, 'datasource_tables.json')):
             os.remove(os.path.join(metadata_dir, 'datasource_tables.json'))
 
-    def add_table_from_file(self, path, clean=True):
-        table = FileTable.from_file(path, clean=clean)
+    def add_table_from_file(self, path):
+        table = FileTable.from_file(path)
         self.add_table(table)
 
     @staticmethod
