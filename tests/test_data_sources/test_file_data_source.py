@@ -215,6 +215,19 @@ class TestDataSource:
         assert values_left.shape == values_right.shape
         assert (values_left == values_right).all()
 
+    def test_select_where_alias(self, csv_file, data_source):
+        sql = "SELECT passenger_id, titanic.survived as ts FROM titanic WHERE titanic.survived = 1"
+        df = pd.read_csv(csv_file)
+        out_df = df[df['survived'] == 1][['passenger_id', 'survived']]
+        out_df.columns = ['passenger_id', 'ts']
+
+        query_result = data_source.query(sql)
+
+        values_left = out_df.values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+        assert (values_left == values_right).all()
+
     def test_select_where_empty_result(self, csv_file, data_source):
         sql = "SELECT passenger_id, survived FROM titanic WHERE survived = 3"
         query_result = data_source.query(sql)
