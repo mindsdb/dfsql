@@ -53,7 +53,7 @@ class DataSource:
 
         self.set_cache(cache or MemoryCache())
 
-        self._query_scope = {}
+        self._query_scope = set()
         
         self.custom_functions = custom_functions or {}
 
@@ -68,7 +68,7 @@ class DataSource:
         return self._query_scope
 
     def clear_query_scope(self):
-        self._query_scope = {}
+        self._query_scope = set()
 
     @classmethod
     def create_new(cls, metadata_dir, tables=None):
@@ -159,7 +159,7 @@ class DataSource:
             raise QueryExecutionException(f'Unknown table {table_name}')
         else:
             df = self.tables[table_name].dataframe
-            self.query_scope[table_name] = df
+            self.query_scope.add(table_name)
             return df
 
     def execute_constant(self, query):
@@ -193,10 +193,9 @@ class DataSource:
 
             if table_name and not table_name in self.query_scope:
                 raise QueryExecutionException(f"Table name {table_name} not in scope.")
-            table = self.query_scope[table_name]
 
-            if column_name in table.columns:
-                column = table[column_name]
+            if column_name in df.columns:
+                column = df[column_name]
                 column.name = query.parts_to_str()
                 return column
         else:
@@ -479,7 +478,7 @@ class DataSource:
             df = self.execute_query(query)
 
         if query.alias:
-            self.query_scope[query.alias.to_string()] = df
+            self.query_scope.add(query.alias.to_string(alias=False))
 
         return df
 
