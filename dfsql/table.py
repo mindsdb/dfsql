@@ -4,24 +4,15 @@ import numpy as np
 import os
 
 
-def make_preprocessing_dict(df):
-    empty_rows = df.index[df.isnull().all(axis=1)].values.tolist()
-    drop_columns = df.columns[df.isnull().all(axis=0)].values.tolist()
-    return dict(empty_rows=empty_rows, drop_columns=drop_columns)
-
-
-def preprocess_dataframe(df, empty_rows, drop_columns):
-    df = df.drop(drop_columns, axis=1)
-    df = df.drop(empty_rows, axis=0)
+def preprocess_dataframe(df):
     df.index = range(len(df))
     df = df.convert_dtypes()
     return df
 
 
 class Table:
-    def __init__(self, name, *args, preprocessing_dict=None, cache=None, **kwargs):
+    def __init__(self, name, *args, cache=None, **kwargs):
         self.name = name
-        self.preprocessing_dict = preprocessing_dict
         self.cache = cache
 
     def __hash__(self):
@@ -30,13 +21,9 @@ class Table:
     def fetch_dataframe(self):
         pass
 
-    def preprocess_dataframe(self, df):
-        return preprocess_dataframe(df, **self.preprocessing_dict)
-
     def fetch_and_preprocess(self):
         df = self.fetch_dataframe()
-        if self.preprocessing_dict:
-            df = self.preprocess_dataframe(df)
+        df = preprocess_dataframe(df)
         return df
 
     @property
@@ -50,7 +37,6 @@ class Table:
         return dict(
             type=self.__class__.__name__,
             name=self.name,
-            preprocessing_dict=self.preprocessing_dict,
         )
 
     @staticmethod
@@ -71,15 +57,12 @@ class FileTable(Table):
         return pd.read_csv(self.fpath)
 
     @classmethod
-    def from_file(cls, path, clean=True):
+    def from_file(cls, path):
         fpath = os.path.join(path)
         fname = '.'.join(os.path.basename(fpath).split('.')[:-1])
 
         table = cls(name=fname, fpath=fpath)
         df = table.fetch_dataframe()
-        if clean:
-            preprocessing_dict = make_preprocessing_dict(df)
-            table.preprocessing_dict = preprocessing_dict
 
         return table
 
