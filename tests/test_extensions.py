@@ -1,6 +1,7 @@
 import modin.pandas as mpd
 import pandas as pd
 import pytest
+import numpy as np
 from dfsql.exceptions import QueryExecutionException, DfsqlException
 
 
@@ -30,6 +31,18 @@ class TestExtensions:
             values_left = df['passenger_id'].values
             values_right = query_result.values
             assert (values_left == values_right).all()
+
+    def test_df_sql_reduce_output(self, config, engine, csv_file):
+        import dfsql.extensions
+        df = engine.read_csv(csv_file)
+        sql = 'SELECT passenger_id LIMIT 1'
+
+        query_result = df.sql(sql)
+        print(query_result)
+        assert isinstance(query_result, np.int64)
+
+        query_result = df.sql(sql, reduce_output=False)
+        assert isinstance(query_result, mpd.DataFrame)
 
     def test_df_sql_nested_select_in(self, config, engine, csv_file):
         import dfsql.extensions

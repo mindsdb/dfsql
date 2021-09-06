@@ -115,6 +115,36 @@ class TestDataSource:
         values_right = query_result.values
         assert values_left.shape == values_right.shape
 
+    def test_select_table_case_insensitive(self, csv_file, tmpdir):
+        from dfsql import DataSource
+        dir_path = csv_file.dirpath()
+        data_source = DataSource.from_dir(metadata_dir=str(tmpdir),
+                                 files_dir_path=dir_path,
+                                 case_sensitive=False)
+
+        df = pd.read_csv(csv_file)
+        sql = "SELECT * FROM TiTaNiC"
+        query_result = data_source.query(sql)
+        assert (query_result.columns == df.columns).all()
+        values_left = df.values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+
+    def test_select_column_case_insensitive(self, csv_file, tmpdir):
+        from dfsql import DataSource
+        dir_path = csv_file.dirpath()
+        data_source = DataSource.from_dir(metadata_dir=str(tmpdir),
+                                          files_dir_path=dir_path,
+                                          case_sensitive=False)
+
+        df = pd.read_csv(csv_file)
+        df = df[['passenger_id', 'embarked']]
+        sql = "SELECT PassEnGer_ID, EmBarKED FROM TiTaNiC"
+        query_result = data_source.query(sql)
+        values_left = df.values
+        values_right = query_result.values
+        assert values_left.shape == values_right.shape
+
     def test_select_column_alias(self, csv_file, data_source):
         df = pd.read_csv(csv_file)
 
@@ -323,6 +353,26 @@ class TestDataSource:
         df = pd.read_csv(csv_file)
         df = df.groupby(['survived']).agg({'passenger_id': 'count'}).reset_index()
         df.columns = ['col1', 'count_passenger_id']
+
+        assert (query_result.columns == df.columns).all()
+        assert query_result.shape == df.shape
+        values_left = df.values
+        values_right = query_result.values
+        assert (values_left == values_right).all().all()
+
+    def test_group_by_case_insensitive(self, csv_file, tmpdir):
+        from dfsql import DataSource
+        dir_path = csv_file.dirpath()
+        data_source = DataSource.from_dir(metadata_dir=str(tmpdir),
+                                          files_dir_path=dir_path,
+                                          case_sensitive=False)
+
+        sql = "SELECT SuRViveD as COL1, count(PASSENGER_ID) AS count_passenger_id FROM titanic GROUP BY SURVIVED"
+        query_result = data_source.query(sql)
+
+        df = pd.read_csv(csv_file)
+        df = df.groupby(['survived']).agg({'passenger_id': 'count'}).reset_index()
+        df.columns = ['COL1', 'count_passenger_id']
 
         assert (query_result.columns == df.columns).all()
         assert query_result.shape == df.shape
@@ -817,6 +867,20 @@ class TestDataSource:
         df = pd.read_csv(googleplay_csv)
         out_df = df.App
         sql = "SELECT tab_alias.app FROM (SELECT App as app FROM googleplaystore) AS tab_alias"
+        query_result = data_source_googleplay.query(sql)
+        assert query_result.name == 'tab_alias.app'
+        assert (out_df.dropna().values == query_result.dropna().values).all()
+
+    def test_subquery_alias_case_insensitive(self, root_directory, googleplay_csv, tmpdir):
+        from dfsql import DataSource
+        dir_path = os.path.join(root_directory, 'tests')
+        data_source_googleplay = DataSource.from_dir(metadata_dir=str(tmpdir),
+                                          files_dir_path=dir_path,
+                                          case_sensitive=False)
+
+        df = pd.read_csv(googleplay_csv)
+        out_df = df.App
+        sql = "SELECT tab_alias.app FROM (SELECT App as APP FROM googleplaystore) AS tab_alias"
         query_result = data_source_googleplay.query(sql)
         assert query_result.name == 'tab_alias.app'
         assert (out_df.dropna().values == query_result.dropna().values).all()
