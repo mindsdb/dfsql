@@ -2,7 +2,7 @@ import os
 from dfsql.engine import pd
 import json
 
-from dfsql.cache import  MemoryCache
+from dfsql.cache import MemoryCache
 from dfsql.exceptions import QueryExecutionException
 from dfsql.functions import OPERATION_MAPPING, AGGREGATE_MAPPING
 from dfsql.commands import try_parse_command
@@ -33,7 +33,12 @@ def cast_type(obj, type_name):
 
 
 class DataSource:
-    def __init__(self, metadata_dir, tables=None, cache=None, custom_functions=None):
+    def __init__(self,
+                 metadata_dir,
+                 tables=None,
+                 cache=None,
+                 custom_functions=None,
+                 case_sensitive=True):
         self.metadata_dir = metadata_dir
 
         if not os.path.exists(self.metadata_dir):
@@ -56,6 +61,8 @@ class DataSource:
         self._query_scope = set()
         
         self.custom_functions = custom_functions or {}
+
+        self.case_sensitive = case_sensitive
 
     def set_cache(self, cache):
         self.cache = cache
@@ -146,12 +153,12 @@ class DataSource:
     def execute_command(self, command):
         return command.execute(self)
 
-    def query(self, sql):
+    def query(self, sql, reduce_output=True):
         command = try_parse_command(sql)
         if command:
             return self.execute_command(command)
         query = parse_sql(sql)
-        return self.execute_query(query, reduce_output=True)
+        return self.execute_query(query, reduce_output=reduce_output)
 
     def execute_table_identifier(self, query):
         table_name = query.parts_to_str()

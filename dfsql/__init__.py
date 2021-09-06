@@ -9,7 +9,7 @@ from dfsql.data_sources import DataSource
 from pandas import DataFrame as PandasDataFrame
 
 
-def sql_query(sql, *args, ds_kwargs=None, custom_functions=None, **kwargs):
+def sql_query(sql, *args, ds_kwargs=None, custom_functions=None, reduce_output=True, **kwargs):
     ds_args = ds_kwargs or {}
     custom_functions = custom_functions or {}
     from_tables = kwargs
@@ -27,7 +27,7 @@ def sql_query(sql, *args, ds_kwargs=None, custom_functions=None, **kwargs):
             PandasDataFrame(dataframe.values, columns=dataframe.columns, index=dataframe.index).to_csv(tmp_fpath, index=False)
             ds.add_table_from_file(tmp_fpath)
 
-        result = ds.query(sql)
+        result = ds.query(sql, reduce_output=reduce_output)
         return result
     finally:
         if ds:
