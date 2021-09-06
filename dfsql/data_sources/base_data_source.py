@@ -10,6 +10,7 @@ from mindsdb_sql import parse_sql
 from mindsdb_sql.parser.ast import (Select, Identifier, Constant, Operation, Function, Join, BinaryOperation, TypeCast,
                                     Tuple, NullConstant, Star)
 from dfsql.table import Table, FileTable
+from dfsql.utils import CaseInsensitiveDict, pd_get_column_case_insensitive, get_df_column, CaseInsensitiveKey
 
 
 def get_modin_operation(sql_op):
@@ -44,10 +45,19 @@ class DataSource:
         if not os.path.exists(self.metadata_dir):
             os.makedirs(self.metadata_dir, exist_ok=True)
 
-        tables = {t.name.lower(): t for t in tables} if tables else {}
-        self.tables = None
+        self.case_sensitive = case_sensitive
 
+
+        tables = {t.name: t for t in tables} if tables else {}
+
+        if not self.case_sensitive:
+            tables = CaseInsensitiveDict(tables)
+
+        self.tables = None
         self.load_metadata()
+        if self.tables and not self.case_sensitive:
+            self.tables = CaseInsensitiveDict(self.tables)
+
         if self.tables and tables:
             raise QueryExecutionException(f'Table metadata already exists in directory {metadata_dir}, but tables also passed to DataSource constructor. '
                             f'\nEither load the previous metadata by omitting the tables argument, or explicitly overwrite old metadata by using DataSource.create_new(metadata_dir, tables).')
@@ -62,7 +72,6 @@ class DataSource:
         
         self.custom_functions = custom_functions or {}
 
-        self.case_sensitive = case_sensitive
 
     def set_cache(self, cache):
         self.cache = cache
@@ -92,9 +101,9 @@ class DataSource:
         self.add_table(table)
 
     @staticmethod
-    def from_dir(metadata_dir, files_dir_path):
+    def from_dir(metadata_dir, files_dir_path, *args, **kwargs):
         files = os.listdir(files_dir_path)
-        ds = DataSource(metadata_dir=metadata_dir)
+        ds = DataSource(*args, metadata_dir=metadata_dir, **kwargs)
         for f in files:
             if f.endswith('.csv'):
                 fpath = os.path.join(files_dir_path, f)
@@ -188,21 +197,23 @@ class DataSource:
 
         if len(name_components) == 1:
             full_column_name = name_components[0]
-            if full_column_name in df.columns:
-                return df[full_column_name]
+            column = get_df_column(df, full_column_name, case_sensitive=self.case_sensitive)
+            if column is not None:
+                return column
         elif len(name_components) == 2:
             table_name, column_name = name_components
 
             # If it's a join or a subquery
             join_column_name = f'{table_name}.{column_name}'
-            if join_column_name in df:
-                return df[join_column_name]
+            column = get_df_column(df, join_column_name, case_sensitive=self.case_sensitive)
+            if column is not None:
+                return column
 
             if table_name and not table_name in self.query_scope:
                 raise QueryExecutionException(f"Table name {table_name} not in scope.")
 
-            if column_name in df.columns:
-                column = df[column_name]
+            column = get_df_column(df, column_name, case_sensitive=self.case_sensitive)
+            if column is not None:
                 column.name = query.parts_to_str()
                 return column
         else:
@@ -273,16 +284,32 @@ class DataSource:
 
     def execute_select_groupby_targets(self, targets, source_df, group_by):
         target_column_names = [] # Original names of columns to be returned by group by
-        column_renames = {} # Aliases for columns to be returned
         agg = {} # Agg dict for pandas aggregation
+
+        column_renames = {} # Aliases for columns to be returned
+
+        df_columns = getattr(source_df, '_columns', None)
+        if df_columns is None:
+            df_columns = source_df.columns
+
+        df_original_column_names_lookup = dict(zip(df_columns, df_columns))
+        if not self.case_sensitive:
+            column_renames = CaseInsensitiveDict(column_renames)
+            df_original_column_names_lookup = CaseInsensitiveDict(df_original_column_names_lookup)
 
         # Obtain columns that aggregation happens by
         group_by_cols = [] # Columns that aggregation happens over. Only these can be among targets and not under an agg func
         for g in group_by:
-            if isinstance(g, Identifier):
-                group_by_cols.append(g.parts_to_str())
+            if isinstance(g, Identifier) or isinstance(g, Operation):
+                string_repr = g.to_string(alias=False)
+                if not self.case_sensitive:
+                    string_repr = CaseInsensitiveKey(string_repr)
+                group_by_cols.append(string_repr)
             elif isinstance(g, Operation):
-                group_by_cols.append(str(g))
+                if self.case_sensitive:
+                    group_by_cols.append(str(g))
+                else:
+                    group_by_cols.append(CaseInsensitiveKey(str(g)))
             elif g == Constant(True): # Special case of implicit aggregation
                 continue
             else:
@@ -291,6 +318,8 @@ class DataSource:
         # Obtain column names, column aliases and aggregations to perform
         for target in targets:
             col_name = target.to_string(alias=False)
+            if not self.case_sensitive:
+                col_name = CaseInsensitiveKey(col_name)
 
             if target.alias:
                 column_renames[col_name] = target.alias.to_string(alias=False)
@@ -320,7 +349,8 @@ class DataSource:
                 if not modin_op:
                     modin_op = get_aggregation_operation(func_name)
 
-                agg[col_name] = (arg_col, modin_op)
+                arg_col_name = df_original_column_names_lookup[arg_col]
+                agg[str(col_name)] = (arg_col_name, modin_op)
             elif col_name not in group_by_cols:
                 # Not a function to be executed and not found among groupbys, sus
                 raise QueryExecutionException(f'Column {col_name} not found in GROUP BY clause')
