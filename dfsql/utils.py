@@ -1,5 +1,3 @@
-from pyparsing import basestring
-
 from dfsql.engine import pd
 from dfsql.exceptions import QueryExecutionException
 
@@ -109,7 +107,7 @@ class CaseInsensitiveKey(str):
 class CaseInsensitiveDict(dict):
     @classmethod
     def _k(cls, key):
-        return key.lower() if isinstance(key, basestring) else key
+        return key.lower() if isinstance(key, str) else key
 
     def __init__(self, *args, **kwargs):
         super(CaseInsensitiveDict, self).__init__(*args, **kwargs)
