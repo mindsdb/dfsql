@@ -24,7 +24,9 @@ jobs:
           pip install -r requirements.txt
           pip install --no-cache-dir -e .[test]
       - name: Run unit tests
-        run: pytest
+        run: |
+          export MODIN_ENGINE=dask
+          pytest
         shell: bash
 
   deploy_pypi:
