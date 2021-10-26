@@ -14,7 +14,6 @@ from dfsql.exceptions import QueryExecutionException, DfsqlException
 )
 class TestExtensions:
     def test_df_sql_simple_select(self, config, engine, csv_file):
-        print('Running with engine', engine)
         import dfsql.extensions
 
         df = engine.read_csv(csv_file)
