@@ -8,7 +8,7 @@ with open("dfsql/__about__.py") as fp:
 with open('requirements.txt') as req_file:
     requirements = req_file.read().splitlines()
 
-modin_requirement = 'modin[all]==0.10.1'
+modin_requirement = 'modin[all]==0.11.2'
 setuptools.setup(
     name=about['__title__'],
     version=about['__version__'],
