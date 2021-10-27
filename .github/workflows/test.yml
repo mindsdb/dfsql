@@ -21,7 +21,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install --no-cache-dir -e .[test]
         pip uninstall modin
-        pip install git+https://github.com/YarShev/modin.git@dev/yigoshev-issue3599
+        pip install --yes git+https://github.com/YarShev/modin.git@dev/yigoshev-issue3599
     - name: Run unit tests
       run: |
         export MODIN_ENGINE=ray
