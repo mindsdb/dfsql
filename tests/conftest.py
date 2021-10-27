@@ -39,7 +39,7 @@ def config(monkeypatch):
 @pytest.fixture()
 def data_source(config, csv_file, tmpdir):
     from dfsql import DataSource
-    dir_path = csv_file.dirpath()
+    dir_path = str(csv_file.dirpath())
     ds = DataSource.from_dir(metadata_dir=str(tmpdir), files_dir_path=dir_path)
     return ds
 

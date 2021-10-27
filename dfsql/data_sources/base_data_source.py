@@ -102,6 +102,8 @@ class DataSource:
 
     @staticmethod
     def from_dir(metadata_dir, files_dir_path, *args, **kwargs):
+        metadata_dir = str(metadata_dir)
+        files_dir_path = str(files_dir_path)
         files = os.listdir(files_dir_path)
         ds = DataSource(*args, metadata_dir=metadata_dir, **kwargs)
         for f in files:
