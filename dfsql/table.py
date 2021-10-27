@@ -51,7 +51,7 @@ class Table:
 class FileTable(Table):
     def __init__(self, *args, fpath, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fpath = fpath
+        self.fpath = str(fpath)
 
     def fetch_dataframe(self):
         return pd.read_csv(self.fpath)
