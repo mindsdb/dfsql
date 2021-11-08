@@ -170,7 +170,7 @@ class DataSource:
         return self.execute_query(query, reduce_output=reduce_output)
 
     def execute_table_identifier(self, query):
-        table_name = query.parts_to_str()
+        table_name = query.alias.to_string() if query.alias else query.to_string()
         if table_name not in self:
             raise QueryExecutionException(f'Unknown table {table_name}')
         else:
