@@ -169,9 +169,7 @@ class TestDataSource:
         query_result = data_source.query(sql)
 
         df = pd.read_csv(csv_file)['passenger_id']
-        df = df.iloc[2:, :]
-        df = df.iloc[:2, :]
-
+        df = df.iloc[2:4]
         assert query_result.shape == df.shape
         assert (df.values == query_result.values).all().all()
 

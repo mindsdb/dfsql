@@ -102,6 +102,8 @@ class DataSource:
 
     @staticmethod
     def from_dir(metadata_dir, files_dir_path, *args, **kwargs):
+        metadata_dir = str(metadata_dir)
+        files_dir_path = str(files_dir_path)
         files = os.listdir(files_dir_path)
         ds = DataSource(*args, metadata_dir=metadata_dir, **kwargs)
         for f in files:
@@ -170,11 +172,14 @@ class DataSource:
         return self.execute_query(query, reduce_output=reduce_output)
 
     def execute_table_identifier(self, query):
-        table_name = query.parts_to_str()
+        table_name = query.to_string(alias=False)
         if table_name not in self:
             raise QueryExecutionException(f'Unknown table {table_name}')
         else:
             df = self.tables[table_name].dataframe
+
+            if query.alias:
+                self.query_scope.add(query.alias.to_string(alias=False))
             self.query_scope.add(table_name)
             return df
 
@@ -282,16 +287,13 @@ class DataSource:
         out_df = out_df[out_names]
         return out_df
 
-    def execute_select_groupby_targets(self, targets, source_df, group_by):
+    def execute_select_groupby_targets(self, targets, source_df, group_by, original_df_columns):
         target_column_names = [] # Original names of columns to be returned by group by
         agg = {} # Agg dict for pandas aggregation
 
         column_renames = {} # Aliases for columns to be returned
 
-        df_columns = getattr(source_df, '_columns', None)
-        if df_columns is None:
-            df_columns = source_df.columns
-
+        df_columns = original_df_columns
         df_original_column_names_lookup = dict(zip(df_columns, df_columns))
         if not self.case_sensitive:
             column_renames = CaseInsensitiveDict(column_renames)
@@ -396,7 +398,6 @@ class DataSource:
         if query.where:
             index = self.execute_operation(query.where, source_df)
             source_df = source_df[index.values]
-        group_by = False
 
         if query.group_by is None:
             # Check for implicit group by
@@ -412,17 +413,16 @@ class DataSource:
                 query.group_by = [Constant(True)]
             elif non_agg_functions and agg_functions:
                 raise(QueryExecutionException(f'Can\'t process a mix of aggregation functions and non-aggregation functions with no GROUP BY clause.'))
-        if query.group_by:
-            group_by = True
-            source_df = self.execute_groupby_queries(query.group_by, source_df)
 
-        if group_by == False:
-            out_df = self.execute_select_targets(query.targets, source_df)
+        if query.group_by is not None:
+            original_df_columns = source_df.columns
+            group_by_df = self.execute_groupby_queries(query.group_by, source_df)
+            out_df = self.execute_select_groupby_targets(query.targets, group_by_df, query.group_by, original_df_columns)
         else:
-            out_df = self.execute_select_groupby_targets(query.targets, source_df, query.group_by)
+            out_df = self.execute_select_targets(query.targets, source_df)
 
         if query.having:
-            if group_by == False:
+            if query.group_by is None:
                 raise QueryExecutionException('Can\'t execute HAVING clause with no GROUP BY clause.')
             index = self.execute_operation(query.having, out_df)
             out_df = out_df[index]

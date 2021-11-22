@@ -8,6 +8,7 @@ with open("dfsql/__about__.py") as fp:
 with open('requirements.txt') as req_file:
     requirements = req_file.read().splitlines()
 
+modin_requirement = 'modin[all]==0.11.2'
 setuptools.setup(
     name=about['__title__'],
     version=about['__version__'],
@@ -20,8 +21,8 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=requirements,
     extras_require=dict(
-        test=['pytest>=5.4.3', 'requests >= 2.22.0', 'modin[all]>=0.10.1', 'pytest-timeout>=1.4.2'],
-        modin=['modin[all]>=0.10.1']),
+        test=['pytest>=5.4.3', 'requests >= 2.22.0', 'pytest-timeout>=1.4.2'],
+        modin=[modin_requirement]),
     classifiers=[
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
