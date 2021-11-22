@@ -172,11 +172,14 @@ class DataSource:
         return self.execute_query(query, reduce_output=reduce_output)
 
     def execute_table_identifier(self, query):
-        table_name = query.alias.to_string(alias=False) if query.alias else query.to_string(alias=False)
+        table_name = query.to_string(alias=False)
         if table_name not in self:
             raise QueryExecutionException(f'Unknown table {table_name}')
         else:
             df = self.tables[table_name].dataframe
+
+            if query.alias:
+                self.query_scope.add(query.alias.to_string(alias=False))
             self.query_scope.add(table_name)
             return df
 

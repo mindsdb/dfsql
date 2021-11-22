@@ -10,7 +10,7 @@ class TestQuickInterface:
 
         df = pd.read_csv(csv_file)
 
-        sql = "SELECT passenger_id FROM whatever_table as new_table"
+        sql = "SELECT passenger_id FROM whatever_table AS new_table"
 
         query_result = sql_query(sql, whatever_table=df)
         assert query_result.name == 'passenger_id'

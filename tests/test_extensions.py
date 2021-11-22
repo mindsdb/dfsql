@@ -1,16 +1,20 @@
-import modin.pandas as mpd
 import pandas as pd
 import pytest
 import numpy as np
 from dfsql.exceptions import QueryExecutionException, DfsqlException
 
+engines = [
+    pytest.param(pd, id="pandas"),
+]
+try:
+    import modin.pandas as mpd
+    engines.append(pytest.param(mpd, id="modin"))
+except ImportError:
+    pass
 
 @pytest.mark.parametrize(
     "engine",
-    [
-        pytest.param(pd, id="pandas"),
-        pytest.param(mpd, id="modin"),
-    ],
+    engines
 )
 class TestExtensions:
     def test_df_sql_simple_select(self, config, engine, csv_file):
@@ -37,11 +41,10 @@ class TestExtensions:
         sql = 'SELECT passenger_id LIMIT 1'
 
         query_result = df.sql(sql)
-        print(query_result)
         assert isinstance(query_result, np.int64)
 
         query_result = df.sql(sql, reduce_output=False)
-        assert isinstance(query_result, mpd.DataFrame)
+        assert isinstance(query_result, pd.DataFrame)
 
     def test_df_sql_nested_select_in(self, config, engine, csv_file):
         import dfsql.extensions
